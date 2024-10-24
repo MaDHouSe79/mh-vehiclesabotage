@@ -545,14 +545,6 @@ CreateThread(function()
                     end
                 end
             end
-        end
-        Wait(0)
-    end
-end)
-
-CreateThread(function()
-    while true do
-        if isLoggedIn then
             if IsPedInAnyVehicle(PlayerPedId(), false) then
                 if GetVehiclePedIsUsing(PlayerPedId()) ~= 0 then
                     local vehicle = GetVehiclePedIsUsing(PlayerPedId())
