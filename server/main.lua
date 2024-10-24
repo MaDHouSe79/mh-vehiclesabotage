@@ -100,7 +100,7 @@ local function ShowEffect(netid)
     if SV_Config.UseOilMarker then
         local vehicle = NetworkGetEntityFromNetworkId(netid)
         if DoesEntityExist(vehicle) then
-            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.oil_empty then
+            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.line_empty then
                 TriggerClientEvent('mh-brakes:client:showEffect', -1, netid)
             end
         end
@@ -125,7 +125,7 @@ local function AddVehicle(vehicle)
     local exist = DoesVehicleExist(vehicle)
     if not exist then
         vehicles[#vehicles + 1] = vehicle
-        Entity(vehicle).state.oil_empty = false
+        Entity(vehicle).state.line_empty = false
     end
 end
 
@@ -134,7 +134,7 @@ end
 local function RemoveVehicle(vehicle)
     for k, v in pairs(vehicles) do
         if v == vehicle then
-            Entity(vehicle).state.oil_empty = nil
+            Entity(vehicle).state.line_empty = nil
             Entity(vehicle).state.wheel_lf = nil
             Entity(vehicle).state.wheel_rf = nil
             Entity(vehicle).state.wheel_lr = nil
@@ -197,7 +197,7 @@ local function CheckVehicle(netid)
                     Entity(vehicle).state.wheel_rf = (vehicleData.wheel_rf == 1) or false
                     Entity(vehicle).state.wheel_lr = (vehicleData.wheel_lr == 1) or false
                     Entity(vehicle).state.wheel_rr = (vehicleData.wheel_rr == 1) or false
-                    Entity(vehicle).state.oil_empty = (vehicleData.oil_empty == 1) or false
+                    Entity(vehicle).state.line_empty = (vehicleData.line_empty == 1) or false
                     ShowEffect(netid)
                 end
                 return
@@ -206,7 +206,7 @@ local function CheckVehicle(netid)
                     print("[mh-brakes] - Create vehicle with good brakes on plate: " .. plate)
                 end
                 AddVehicle(vehicle)
-                Entity(vehicle).state.oil_empty = false
+                Entity(vehicle).state.line_empty = false
                 Entity(vehicle).state.wheel_lf = false
                 Entity(vehicle).state.wheel_rf = false
                 Entity(vehicle).state.wheel_lr = false
@@ -234,21 +234,21 @@ local function UpdateLineData(vehicle, bone, plate, type)
             end
             data = {1, plate, 1}
             if bone == 'wheel_lf' then
-                query = "INSERT INTO mh_brakes (wheel_lf, plate, oil_empty) VALUES (?, ?, ?)"
+                query = "INSERT INTO mh_brakes (wheel_lf, plate, line_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_lf = true
-                Entity(vehicle).state.oil_empty = true
+                Entity(vehicle).state.line_empty = true
             elseif bone == 'wheel_rf' then
-                query = "INSERT INTO mh_brakes (wheel_rf, plate, oil_empty) VALUES (?, ?, ?)"
+                query = "INSERT INTO mh_brakes (wheel_rf, plate, line_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_rf = true
-                Entity(vehicle).state.oil_empty = true
+                Entity(vehicle).state.line_empty = true
             elseif bone == 'wheel_lr' then
-                query = "INSERT INTO mh_brakes (wheel_lr, plate, oil_empty) VALUES (?, ?, ?)"
+                query = "INSERT INTO mh_brakes (wheel_lr, plate, line_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_lr = true
-                Entity(vehicle).state.oil_empty = true
+                Entity(vehicle).state.line_empty = true
             elseif bone == 'wheel_rr' then
-                query = "INSERT INTO mh_brakes (wheel_rr, plate, oil_empty) VALUES (?, ?, ?)"
+                query = "INSERT INTO mh_brakes (wheel_rr, plate, line_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_rr = true
-                Entity(vehicle).state.oil_empty = true
+                Entity(vehicle).state.line_empty = true
             end
             ShowEffect(NetworkGetNetworkIdFromEntity(vehicle))
             goto run
@@ -299,7 +299,7 @@ local function UpdateLineData(vehicle, bone, plate, type)
         elseif type == "refilled" then
             data = {plate}
             query = "DELETE FROM mh_brakes WHERE plate = ?"
-            Entity(vehicle).state.oil_empty = false
+            Entity(vehicle).state.line_empty = false
             Entity(vehicle).state.wheel_lf = false
             Entity(vehicle).state.wheel_rf = false
             Entity(vehicle).state.wheel_lr = false
@@ -488,7 +488,7 @@ CreateThread(function()
             `wheel_rf` int(10) NOT NULL DEFAULT 0,
             `wheel_lr` int(10) NOT NULL DEFAULT 0,
             `wheel_rr` int(10) NOT NULL DEFAULT 0,
-            `oil_empty` int(10) NOT NULL DEFAULT 0,
+            `line_empty` int(10) NOT NULL DEFAULT 0,
             PRIMARY KEY (`id`) USING BTREE
         ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;    
     ]])
