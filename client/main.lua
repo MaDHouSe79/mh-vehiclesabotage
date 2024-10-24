@@ -101,6 +101,14 @@ local function Draw3DText(x, y, z, txt, font, scale, num)
     ClearDrawOrigin()
 end
 
+local function SetBrakeForce(vehicle, force)
+    SetVehicleHandlingField(vehicle, "CHandlingData", "fBrakeForce", force)
+end
+
+local function GetBrakeForce(vehicle)
+    return GetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce")
+end
+
 local function RequiredItems(item)
     local items = {{
         name = item,
@@ -269,14 +277,6 @@ local function IsBrakelineAlreadyBroken(vehicle, bone)
     return false
 end
 
-local function SetBrakeForce(vehicle, force)
-    SetVehicleHandlingField(vehicle, "CHandlingData", "fBrakeForce", force)
-end
-
-local function GetBrakeForce(vehicle)
-    return GetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce")
-end
-
 local function Progressbar(title, item, timer, vehicle, bone, trigger, endMessage, animData)
     QBCore.Functions.Progressbar('mh_brakes', title, timer, false, true, {
         disableMovement = true,
@@ -376,8 +376,7 @@ local function ShowBones(vehicle)
                     local wheels = {}
                     local wheelPos = GetWorldPositionOfEntityBone(vehicle, wheelBoneIndex)
                     local offset = GetWorldPositionOfEntityBone(vehicle, GetEntityBoneIndexByName(vehicle, wheelBone))
-                    local distance = #(vector3(playerCoords.x, playerCoords.y, playerCoords.z) -
-                                         vector3(offset.x, offset.y, offset.z))
+                    local distance = #(vector3(playerCoords.x, playerCoords.y, playerCoords.z) - vector3(offset.x, offset.y, offset.z))
                     if QBCore.Functions.HasItem(Config.BrakeLine.Repair.item, 1) then
                         pressTxt = Lang:t('info.repair_brakeline')
                     end
