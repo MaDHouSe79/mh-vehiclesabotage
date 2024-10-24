@@ -116,18 +116,18 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         return
     end
 
-    if Player.PlayerData.money.cash >= price then
-        Player.Functions.RemoveMoney('cash', price, 'shop-purchase')
-        if itemInfo.name == 'brake_cutter' then
-            TriggerEvent('mh-brakes:server:giveitem', source, 'brake_cutter', amount, price)
-        else
+    if itemInfo.name == 'brake_cutter' then
+        TriggerEvent('mh-brakes:server:giveitem', source, 'brake_cutter', amount, price)
+    else
+        if Player.PlayerData.money.cash >= price then
+            Player.Functions.RemoveMoney('cash', price, 'shop-purchase')
             AddItem(source, itemInfo.name, amount, nil, itemInfo.info, 'shop-purchase')
             TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
+            cb(true)
+        else
+            TriggerClientEvent('QBCore:Notify', source, 'You do not have enough money', 'error')
+            cb(false)
         end
-        cb(true)
-    else
-        TriggerClientEvent('QBCore:Notify', source, 'You do not have enough money', 'error')
-        cb(false)
     end
 end)
 ```
