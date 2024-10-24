@@ -50,7 +50,7 @@ end
 
 local function DoesPlateExist(plate)
     local found = false
-    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_broken_brakes WHERE plate = ?', {plate})
+    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', {plate})
     if result ~= nil and result[1] ~= nil and result[1].plate ~= nil and result[1].plate == plate then
         found = true
     end
@@ -59,7 +59,7 @@ end
 
 local function GetVehicleData(plate)
     local data = {}
-    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_broken_brakes WHERE plate = ?', {plate})
+    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', {plate})
     if result ~= nil and result[1] ~= nil then
         data = result[1]
     end
@@ -195,19 +195,19 @@ local function UpdateLineData(vehicle, bone, plate, type)
             end
             data = {1, plate, 1}
             if bone == 'wheel_lf' then
-                query = "INSERT INTO mh_broken_brakes (wheel_lf, plate, oil_empty) VALUES (?, ?, ?)"
+                query = "INSERT INTO mh_brakes (wheel_lf, plate, oil_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_lf = true
                 Entity(vehicle).state.oil_empty = true
             elseif bone == 'wheel_rf' then
-                query = "INSERT INTO mh_broken_brakes (wheel_rf, plate, oil_empty) VALUES (?, ?, ?)"
+                query = "INSERT INTO mh_brakes (wheel_rf, plate, oil_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_rf = true
                 Entity(vehicle).state.oil_empty = true
             elseif bone == 'wheel_lr' then
-                query = "INSERT INTO mh_broken_brakes (wheel_lr, plate, oil_empty) VALUES (?, ?, ?)"
+                query = "INSERT INTO mh_brakes (wheel_lr, plate, oil_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_lr = true
                 Entity(vehicle).state.oil_empty = true
             elseif bone == 'wheel_rr' then
-                query = "INSERT INTO mh_broken_brakes (wheel_rr, plate, oil_empty) VALUES (?, ?, ?)"
+                query = "INSERT INTO mh_brakes (wheel_rr, plate, oil_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_rr = true
                 Entity(vehicle).state.oil_empty = true
             end
@@ -219,19 +219,19 @@ local function UpdateLineData(vehicle, bone, plate, type)
             end
             data = {1, plate}
             if bone == 'wheel_lf' then
-                query = "UPDATE mh_broken_brakes SET wheel_lf = ? WHERE plate = ?"
+                query = "UPDATE mh_brakes SET wheel_lf = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_lf = true
                 goto run
             elseif bone == 'wheel_rf' then
-                query = "UPDATE mh_broken_brakes SET wheel_rf = ? WHERE plate = ?"
+                query = "UPDATE mh_brakes SET wheel_rf = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_rf = true
                 goto run
             elseif bone == 'wheel_lr' then
-                query = "UPDATE mh_broken_brakes SET wheel_lr = ? WHERE plate = ?"
+                query = "UPDATE mh_brakes SET wheel_lr = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_lr = true
                 goto run
             elseif bone == 'wheel_rr' then
-                query = "UPDATE mh_broken_brakes SET wheel_rr = ? WHERE plate = ?"
+                query = "UPDATE mh_brakes SET wheel_rr = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_rr = true
                 goto run
             end
@@ -241,25 +241,25 @@ local function UpdateLineData(vehicle, bone, plate, type)
             end
             data = {0, plate}
             if bone == 'wheel_lf' then
-                query = "UPDATE mh_broken_brakes SET wheel_lf = ? WHERE plate = ?"
+                query = "UPDATE mh_brakes SET wheel_lf = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_lf = false
                 goto run
             elseif bone == 'wheel_rf' then
-                query = "UPDATE mh_broken_brakes SET wheel_rf = ? WHERE plate = ?"
+                query = "UPDATE mh_brakes SET wheel_rf = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_rf = false
                 goto run
             elseif bone == 'wheel_lr' then
-                query = "UPDATE mh_broken_brakes SET wheel_lr = ? WHERE plate = ?"
+                query = "UPDATE mh_brakes SET wheel_lr = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_lr = false
                 goto run
             elseif bone == 'wheel_rr' then
-                query = "UPDATE mh_broken_brakes SET wheel_rr = ? WHERE plate = ?"
+                query = "UPDATE mh_brakes SET wheel_rr = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_rr = false
                 goto run
             end
         elseif type == "refilled" then
             data = {plate}
-            query = "DELETE FROM mh_broken_brakes WHERE plate = ?"
+            query = "DELETE FROM mh_brakes WHERE plate = ?"
             Entity(vehicle).state.oil_empty = false
             Entity(vehicle).state.wheel_lf = false
             Entity(vehicle).state.wheel_rf = false
@@ -339,7 +339,8 @@ RegisterNetEvent('mh-brakes:server:giveitem', function(source, item, amount, pri
                 quality = SV_Config.BrakeLine.Cut.MaxQuality
             }
             Player.Functions.AddItem(SV_Config.BrakeLine.Cut.item, 1, nil, info)
-            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[SV_Config.BrakeLine.Cut.item], 'add', 1)
+            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[SV_Config.BrakeLine.Cut.item],
+                'add', 1)
         end
     end
 end)
@@ -421,4 +422,20 @@ end)
 QBCore.Functions.CreateUseableItem(SV_Config.BrakeLine.Oil.item, function(source, item)
     local src = source
     UseItem(src, SV_Config.BrakeLine.Oil.item)
+end)
+
+CreateThread(function()
+    Wait(5100)
+    MySQL.Async.execute([[
+        CREATE TABLE IF NOT EXISTS `mh_brakes` (
+            `id` int(10) NOT NULL AUTO_INCREMENT,
+            `plate` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+            `wheel_lf` int(10) NOT NULL DEFAULT 0,
+            `wheel_rf` int(10) NOT NULL DEFAULT 0,
+            `wheel_lr` int(10) NOT NULL DEFAULT 0,
+            `wheel_rr` int(10) NOT NULL DEFAULT 0,
+            `oil_empty` int(10) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`id`) USING BTREE
+        ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;    
+    ]])
 end)
