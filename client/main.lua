@@ -366,7 +366,7 @@ local function CutBrakes(netid, bone)
             if isBrakelineAlreadyBroken then
                 return Notify(Lang:t('info.brakeline_is_already_broken'), "success", 5000)
             elseif not isBrakelineAlreadyBroken then
-                local success = exports["qb-minigames"]:Skillbar(Config.SkillBarType, Config.SkillBarKeys)
+                local success = UseSkillBar()
                 if success then
                     Progressbar(Lang:t('info.cutting_brakes'), Config.BrakeLine.Cut.item, Config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), Config.BrakeLine.Cut)
                 else
