@@ -74,10 +74,9 @@ CREATE TABLE IF NOT EXISTS `mh_broken_brakes` (
 
 # QB Shared items
 ```lua
-brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 2500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
-brake_toolbox                = { name = 'brake_toolbox', label = 'Toolbox', weight = 2500, type = 'item', image = 'brake_toolbox.png', unique = false, useable = true, shouldClose = true, description = 'A toolbox for vehicle tools' },
 brake_cutter                 = { name = 'brake_cutter', label = 'Brake Cutter', weight = 500, type = 'item', image = 'brake_cutter.png', unique = false, useable = true, shouldClose = true, description = 'A Brake Cutter to cut brake lines' },
 brake_line                   = { name = 'brake_line', label = 'Brake Line', weight = 200, type = 'item', image = 'brake_line.png', unique = false, useable = true, shouldClose = true, description = 'A brake line to fix a vehicle brake' },
+brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 2500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
 ```
 
 # Replace Code `qb-core` (client side)
