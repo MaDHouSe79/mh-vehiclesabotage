@@ -84,7 +84,8 @@ local function ShowEffect(netid)
         local vehicle = NetworkGetEntityFromNetworkId(netid)
         if DoesEntityExist(vehicle) then
             print("show effect")
-            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.oil_empty then
+            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or
+                Entity(vehicle).state.wheel_rr or Entity(vehicle).state.oil_empty then
                 TriggerClientEvent('mh-brakes:client:showEffect', -1, netid)
             end
         end
@@ -94,7 +95,9 @@ end
 local function DoesVehicleExist(vehicle)
     local exist = false
     for k, v in pairs(vehicles) do
-        if v == vehicle then exist = true end
+        if v == vehicle then
+            exist = true
+        end
     end
     return exist
 end
@@ -115,7 +118,37 @@ local function RemoveVehicle(vehicle)
     end
 end
 
--- Set and Get Data (start)
+local function UseItem(src, item)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then
+        return
+    end
+    local canUse = IsCorrectItem(item)
+    if not canUse then
+        return
+    end
+    if SV_Config.UseAsJob then
+        if Player.PlayerData.job.type == SV_Config.NeededJobType and Player.PlayerData.job.onduty or IsAdmin(src) then
+            if Player.Functions.HasItem(item, 1) then
+                TriggerClientEvent('mh-brakes:client:UseItem', src, item)
+            else
+                RequiredItems(src, item)
+            end
+        else
+            print(src, item)
+            TriggerClientEvent('mh-brakes:client:notify', src, Lang:t('info.wrong_job', {
+                job = SV_Config.NeededJobType
+            }))
+        end
+    elseif not SV_Config.UseAsJob then
+        if Player.Functions.HasItem(item, 1) then
+            TriggerClientEvent('mh-brakes:client:UseItem', src, item)
+        else
+            RequiredItems(src, item)
+        end
+    end
+end
+
 local function CheckVehicle(netid)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
@@ -151,11 +184,15 @@ local function CheckVehicle(netid)
 end
 
 local function UpdateLineData(vehicle, bone, plate, type)
-    if not vehicle or not type or not plate then return end
+    if not vehicle or not type or not plate then
+        return
+    end
     local query, data = nil, nil
     if DoesEntityExist(vehicle) then
         if type == "insert" then
-            if not bone then return end
+            if not bone then
+                return
+            end
             data = {1, plate, 1}
             if bone == 'wheel_lf' then
                 query = "INSERT INTO mh_broken_brakes (wheel_lf, plate, oil_empty) VALUES (?, ?, ?)"
@@ -177,7 +214,9 @@ local function UpdateLineData(vehicle, bone, plate, type)
             ShowEffect(NetworkGetNetworkIdFromEntity(vehicle))
             goto run
         elseif type == "wrecked" then
-            if not bone then return end
+            if not bone then
+                return
+            end
             data = {1, plate}
             if bone == 'wheel_lf' then
                 query = "UPDATE mh_broken_brakes SET wheel_lf = ? WHERE plate = ?"
@@ -197,7 +236,9 @@ local function UpdateLineData(vehicle, bone, plate, type)
                 goto run
             end
         elseif type == "repair" then
-            if not bone then return end
+            if not bone then
+                return
+            end
             data = {0, plate}
             if bone == 'wheel_lf' then
                 query = "UPDATE mh_broken_brakes SET wheel_lf = ? WHERE plate = ?"
@@ -232,9 +273,7 @@ local function UpdateLineData(vehicle, bone, plate, type)
         end
     end
 end
--- Set and Get Data (end)
 
--- Shop (start)
 RegisterNetEvent('mh-brakes:server:openShop', function(shopId)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
@@ -304,9 +343,7 @@ RegisterNetEvent('mh-brakes:server:giveitem', function(source, item, amount, pri
         end
     end
 end)
--- Shop (end)
 
--- Sync To all Players (start)
 RegisterServerEvent("mh-brakes:server:onjoin", function()
     local src = source
     TriggerClientEvent('mh-brakes:client:onjoin', src, SV_Config.Shops, SV_Config.BrakeLine)
@@ -330,7 +367,9 @@ RegisterServerEvent("mh-brakes:server:syncRepair", function(netid, bone)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
         local exist = DoesPlateExist(plate)
-        if exist then UpdateLineData(vehicle, bone, plate, "repair") end
+        if exist then
+            UpdateLineData(vehicle, bone, plate, "repair")
+        end
     end
 end)
 
@@ -339,20 +378,26 @@ RegisterServerEvent("mh-brakes:server:syncFixed", function(netid)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
         local isALineBroken = IsALineBroken(vehicle)
-        if not isALineBroken then UpdateLineData(vehicle, nil, plate, "refilled") end
+        if not isALineBroken then
+            UpdateLineData(vehicle, nil, plate, "refilled")
+        end
     end
 end)
 
 RegisterNetEvent('mh-brakes:server:checkVehicle', function(netid)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
-    if DoesEntityExist(vehicle) then CheckVehicle(netid) end
+    if DoesEntityExist(vehicle) then
+        CheckVehicle(netid)
+    end
 end)
 
 RegisterNetEvent('mh-brakes:server:registerVehicle', function(netid)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
         local exist = DoesVehicleExist(vehicle)
-        if not exist then AddVehicle(vehicle) end 
+        if not exist then
+            AddVehicle(vehicle)
+        end
     end
 end)
 
@@ -362,35 +407,6 @@ AddEventHandler('entityCreated', function(entity)
         CheckVehicle(NetworkGetNetworkIdFromEntity(entity))
     end
 end)
--- Sync To all Players (end)
-
--- UseableItems
-local function UseItem(src, item)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-    local canUse = IsCorrectItem(item)
-    if not canUse then return end
-    if SV_Config.UseAsJob then
-        if Player.PlayerData.job.type == SV_Config.NeededJobType and Player.PlayerData.job.onduty or IsAdmin(src) then
-            if Player.Functions.HasItem(item, 1) then
-                TriggerClientEvent('mh-brakes:client:UseItem', src, item)
-            else
-                RequiredItems(src, item)
-            end
-        else
-            print(src, item)
-            TriggerClientEvent('mh-brakes:client:notify', src, Lang:t('info.wrong_job', {
-                job = SV_Config.NeededJobType
-            }))
-        end
-    elseif not SV_Config.UseAsJob then
-        if Player.Functions.HasItem(item, 1) then
-            TriggerClientEvent('mh-brakes:client:UseItem', src, item)
-        else
-            RequiredItems(src, item)
-        end
-    end
-end
 
 QBCore.Functions.CreateUseableItem(SV_Config.BrakeLine.Cut.item, function(source, item)
     local src = source
@@ -405,21 +421,4 @@ end)
 QBCore.Functions.CreateUseableItem(SV_Config.BrakeLine.Oil.item, function(source, item)
     local src = source
     UseItem(src, SV_Config.BrakeLine.Oil.item)
-end)
-
--- Add Table To Database (do not edit this)
-CreateThread(function()
-    Wait(5100)
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `mh_broken_brakes` (
-            `id` int(10) NOT NULL AUTO_INCREMENT,
-            `plate` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-            `wheel_lf` int(10) NOT NULL DEFAULT 0,
-            `wheel_rf` int(10) NOT NULL DEFAULT 0,
-            `wheel_lr` int(10) NOT NULL DEFAULT 0,
-            `wheel_rr` int(10) NOT NULL DEFAULT 0,
-            `oil_empty` int(10) NOT NULL DEFAULT 0,
-            PRIMARY KEY (`id`) USING BTREE
-        ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;     
-    ]])
 end)
