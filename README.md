@@ -29,7 +29,7 @@
 # MH Brakes (OneSync Required)
 - Sabotage any vehicle brakes, any player that drive this vehicle have no brakes.
 - A player can fix the brakes if they have the items that is needed,
-- but if you set  `SV_Config.UseAsJob` to true, then only players with the job can use and fix it.
+- but if you set `SV_Config.UseAsJob` to true, then only players with the job can use and fix it.
 - It has 3 items, one for repare, one to cut the brakes, and one to refill the brake oil.
 
 # Dependencies
@@ -80,9 +80,9 @@ CREATE TABLE IF NOT EXISTS `mh_brakes` (
 
 # QB Shared items
 ```lua
-brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 2500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
 brake_cutter                 = { name = 'brake_cutter', label = 'Brake Cutter', weight = 500, type = 'item', image = 'brake_cutter.png', unique = false, useable = true, shouldClose = true, description = 'A Brake Cutter to cut brake lines' },
 brake_line                   = { name = 'brake_line', label = 'Brake Line', weight = 200, type = 'item', image = 'brake_line.png', unique = false, useable = true, shouldClose = true, description = 'A brake line to fix a vehicle brake' },
+brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 2500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
 ```
 
 # Replace code in `qb-core` (client side)
