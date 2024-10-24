@@ -4,6 +4,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local vehicles = {}
 
+--- Check if a player is a admin
+---@param src number
 local function IsAdmin(src)
     if SV_Config.AdminHasAccess then
         if QBCore.Functions.HasPermission(src, 'admin') or IsPlayerAceAllowed(src, 'command') then
@@ -13,6 +15,8 @@ local function IsAdmin(src)
     return false
 end
 
+--- Checks if the used item is a correct item.
+---@param item string
 local function IsCorrectItem(item)
     local isCorrect = false
     for k, v in pairs(SV_Config.Items) do
@@ -23,6 +27,8 @@ local function IsCorrectItem(item)
     return isCorrect
 end
 
+--- Get shop items
+---@param shopId number
 local function GetShopItems(shopId)
     local shopitems = {}
     for _, item in pairs(SV_Config.Shops[shopId].items) do
@@ -38,6 +44,9 @@ local function GetShopItems(shopId)
     return shopitems
 end
 
+--- Display ther required items
+---@param src number
+---@param item string
 local function RequiredItems(src, item)
     local items = {{
         name = item,
@@ -48,6 +57,8 @@ local function RequiredItems(src, item)
     TriggerClientEvent('qb-inventory:client:requiredItems', src, items, false)
 end
 
+--- Check if a plate exist
+---@param plate any
 local function DoesPlateExist(plate)
     local found = false
     local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', {plate})
@@ -57,6 +68,8 @@ local function DoesPlateExist(plate)
     return found
 end
 
+--- Get vehicle data from database
+---@param plate string
 local function GetVehicleData(plate)
     local data = {}
     local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', {plate})
@@ -66,6 +79,8 @@ local function GetVehicleData(plate)
     return data
 end
 
+--- Checks if a line is broken
+---@param vehicle any
 local function IsALineBroken(vehicle)
     if Entity(vehicle).state.wheel_lf then
         return true
@@ -79,6 +94,8 @@ local function IsALineBroken(vehicle)
     return false
 end
 
+--- Show the oil leak effect
+---@param netid number
 local function ShowEffect(netid)
     if SV_Config.UseOilMarker then
         local vehicle = NetworkGetEntityFromNetworkId(netid)
@@ -90,6 +107,8 @@ local function ShowEffect(netid)
     end
 end
 
+--- Does vehicle exist in the list
+---@param vehicle entity
 local function DoesVehicleExist(vehicle)
     local exist = false
     for k, v in pairs(vehicles) do
@@ -100,6 +119,8 @@ local function DoesVehicleExist(vehicle)
     return exist
 end
 
+--- Add vehicle to list
+---@param vehicle entity
 local function AddVehicle(vehicle)
     local exist = DoesVehicleExist(vehicle)
     if not exist then
@@ -108,6 +129,8 @@ local function AddVehicle(vehicle)
     end
 end
 
+--- Remove vehicle from list
+---@param vehicle entity
 local function RemoveVehicle(vehicle)
     for k, v in pairs(vehicles) do
         if v == vehicle then
@@ -121,6 +144,9 @@ local function RemoveVehicle(vehicle)
     end
 end
 
+--- Use Item
+---@param src number
+---@param item string
 local function UseItem(src, item)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then
@@ -151,6 +177,8 @@ local function UseItem(src, item)
     end
 end
 
+--- Check vehicle and add data to the vehicle.
+---@param netid number
 local function CheckVehicle(netid)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
@@ -189,6 +217,11 @@ local function CheckVehicle(netid)
     end
 end
 
+--- Update the line data statebag and database
+---@param vehicle any
+---@param bone any
+---@param plate any
+---@param type any
 local function UpdateLineData(vehicle, bone, plate, type)
     if not vehicle or not type or not plate then
         return
