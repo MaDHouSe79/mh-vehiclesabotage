@@ -52,14 +52,14 @@ ensure [mh] # add here.
 ```
 
 # Inventory Images
+![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_toolbox.png?raw=true)
 ![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_cutter.png?raw=true)
 ![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_line.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_oil.png?raw=true)
 
 
 # SQL Database
 ```sql
-CREATE TABLE IF NOT EXISTS `mh_broken_brakes` (
+CREATE TABLE IF NOT EXISTS `mh_brakes` (
     `id` int(10) NOT NULL AUTO_INCREMENT,
     `plate` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
     `wheel_lf` int(10) NOT NULL DEFAULT 0,
@@ -68,43 +68,15 @@ CREATE TABLE IF NOT EXISTS `mh_broken_brakes` (
     `wheel_rr` int(10) NOT NULL DEFAULT 0,
     `oil_empty` int(10) NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;     
-
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;    
 ```
 
 # QB Shared items
 ```lua
+brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 2500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
+brake_toolbox                = { name = 'brake_toolbox', label = 'Toolbox', weight = 2500, type = 'item', image = 'brake_toolbox.png', unique = false, useable = true, shouldClose = true, description = 'A toolbox for vehicle tools' },
 brake_cutter                 = { name = 'brake_cutter', label = 'Brake Cutter', weight = 500, type = 'item', image = 'brake_cutter.png', unique = false, useable = true, shouldClose = true, description = 'A Brake Cutter to cut brake lines' },
 brake_line                   = { name = 'brake_line', label = 'Brake Line', weight = 200, type = 'item', image = 'brake_line.png', unique = false, useable = true, shouldClose = true, description = 'A brake line to fix a vehicle brake' },
-brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 2500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
-```
-
-# Replace Code `qb-core` (client side)
-- in `qb-core/client/functions.lua` arount line 351
-```lua
-function QBCore.Functions.SpawnVehicle(model, cb, coords, isnetworked, teleportInto)
-    local ped = PlayerPedId()
-    model = type(model) == 'string' and joaat(model) or model
-    if not IsModelInCdimage(model) then return end
-    if coords then
-        coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
-    else
-        coords = GetEntityCoords(ped)
-    end
-    isnetworked = isnetworked == nil or isnetworked
-    QBCore.Functions.LoadModel(model)
-    local veh = CreateVehicle(model, coords.x, coords.y, coords.z, coords.w, isnetworked, false)
-    local netid = NetworkGetNetworkIdFromEntity(veh)
-    SetVehicleHasBeenOwnedByPlayer(veh, true)
-    SetNetworkIdCanMigrate(netid, true)
-    SetVehicleNeedsToBeHotwired(veh, false)
-    SetVehRadioStation(veh, 'OFF')
-    SetVehicleFuelLevel(veh, 100.0)
-    SetModelAsNoLongerNeeded(model)
-    if teleportInto then TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1) end
-    TriggerServerEvent('mh-brakes:server:checkVehicle', netid) -- Add here
-    if cb then cb(veh) end
-end
 ```
 
 # Replace code `qb-inventory` (Server side)
@@ -157,34 +129,6 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         TriggerClientEvent('QBCore:Notify', source, 'You do not have enough money', 'error')
         cb(false)
     end
-end)
-```
-
-# Replace code `qb-garages` (server side)
-- in `qb-garages/client/main.lua` find `qb-garages:client:takeOutGarage` around line 289
-```lua
-RegisterNetEvent('qb-garages:client:takeOutGarage', function(data)
-    QBCore.Functions.TriggerCallback('qb-garages:server:IsSpawnOk', function(spawn)
-        if spawn then
-            local location = GetSpawnPoint(data.garage)
-            if not location then return end
-            QBCore.Functions.TriggerCallback('qb-garages:server:spawnvehicle', function(netId, properties, vehPlate)
-                while not NetworkDoesNetworkIdExist(netId) do Wait(10) end
-                local veh = NetworkGetEntityFromNetworkId(netId)
-                Citizen.Await(CheckPlate(veh, vehPlate))
-                QBCore.Functions.SetVehicleProperties(veh, properties)
-                exports[Config.FuelResource]:SetFuel(veh, data.stats.fuel)
-                TriggerServerEvent('qb-garages:server:updateVehicleState', 0, vehPlate)
-                TriggerEvent('vehiclekeys:client:SetOwner', vehPlate)
-                if Config.Warp then TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1) end
-                if Config.VisuallyDamageCars then doCarDamage(veh, data.stats, properties) end
-                SetVehicleEngineOn(veh, true, true, false)
-                TriggerServerEvent('mh-brakes:server:checkVehicle', netId) -- add here
-            end, data.plate, data.vehicle, location, true)
-        else
-            QBCore.Functions.Notify(Lang:t('error.not_depot'), 'error', 5000)
-        end
-    end, data.plate, data.type)
 end)
 ```
 
