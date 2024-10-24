@@ -83,8 +83,7 @@ local function ShowEffect(netid)
     if SV_Config.UseOilMarker then
         local vehicle = NetworkGetEntityFromNetworkId(netid)
         if DoesEntityExist(vehicle) then
-            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or
-                Entity(vehicle).state.wheel_rr or Entity(vehicle).state.oil_empty then
+            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.oil_empty then
                 TriggerClientEvent('mh-brakes:client:showEffect', -1, netid)
             end
         end
@@ -160,7 +159,9 @@ local function CheckVehicle(netid)
             local plate = GetVehicleNumberPlateText(vehicle)
             local exist = DoesPlateExist(plate)
             if exist then
-                if SV_Config.Debug then print("[mh-brakes] - Create vehicle with broken brakes on plate: " .. plate) end
+                if SV_Config.Debug then
+                    print("[mh-brakes] - Create vehicle with broken brakes on plate: " .. plate)
+                end
                 AddVehicle(vehicle)
                 local vehicleData = GetVehicleData(plate)
                 if type(vehicleData) == 'table' then
@@ -173,7 +174,9 @@ local function CheckVehicle(netid)
                 end
                 return
             elseif not exist then
-                if SV_Config.Debug then print("[mh-brakes] - Create vehicle with good brakes on plate: " .. plate) end
+                if SV_Config.Debug then
+                    print("[mh-brakes] - Create vehicle with good brakes on plate: " .. plate)
+                end
                 AddVehicle(vehicle)
                 Entity(vehicle).state.oil_empty = false
                 Entity(vehicle).state.wheel_lf = false
@@ -399,7 +402,9 @@ RegisterNetEvent('mh-brakes:server:registerVehicle', function(netid)
     if DoesEntityExist(vehicle) then
         local exist = DoesVehicleExist(vehicle)
         if not exist then
-            if SV_Config.Debug then print("[^3" .. GetCurrentResourceName() .. "^7] - Register vehicle with plate: "..GetVehicleNumberPlateText(vehicle)) end
+            if SV_Config.Debug then
+                print("[^3" .. GetCurrentResourceName() .. "^7] - Register vehicle with plate: " .. GetVehicleNumberPlateText(vehicle))
+            end
             AddVehicle(vehicle)
         end
     end
@@ -410,7 +415,9 @@ RegisterNetEvent('mh-brakes:server:unregisterVehicle', function(netid)
     if DoesEntityExist(vehicle) then
         local exist = DoesVehicleExist(vehicle)
         if exist then
-            if SV_Config.Debug then print("[^3" .. GetCurrentResourceName() .. "^7] - Inregister vehicle with plate: "..GetVehicleNumberPlateText(vehicle)) end
+            if SV_Config.Debug then
+                print("[^3" .. GetCurrentResourceName() .. "^7] - Inregister vehicle with plate: " .. GetVehicleNumberPlateText(vehicle))
+            end
             RemoveVehicle(vehicle)
         end
     end
