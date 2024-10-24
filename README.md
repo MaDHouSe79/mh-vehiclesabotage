@@ -39,6 +39,11 @@
 - [progressbar](https://github.com/qbcore-framework/qb-core/progressbar)
 - [qb-minigames](https://github.com/qbcore-framework/qb-core/qb-minigames)
 
+# Inventory Images
+![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_cutter.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_line.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_oil.png?raw=true)
+
 # Installation
 - Place the folder `mh-brakes` in the folder `[mh]`
 - Add the shared items in `qb-core/shared/items.lua`
@@ -58,12 +63,6 @@ ensure [voice]
 ensure [defaultmaps]
 ensure [mh] # add here.
 ```
-
-# Inventory Images
-![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_cutter.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_line.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_oil.png?raw=true)
-
 
 # SQL Database
 ```sql
