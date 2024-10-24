@@ -226,8 +226,8 @@ local function UpdateLineData(vehicle, bone, plate, type)
     if not vehicle or not type or not plate then
         return
     end
-    local query, data = nil, nil
     if DoesEntityExist(vehicle) then
+        local query, data = nil, nil
         if type == "insert" then
             if not bone then
                 return
