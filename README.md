@@ -32,6 +32,13 @@
 - but if you set  `SV_Config.UseAsJob` to true, then only players with the job can use and fix it.
 - It has 3 items, one for repare, one to cut the brakes, and one to refill the brake oil.
 
+# Dependencies
+- [oxmysql](https://github.com/overextended/oxmysql/releases/tag/v1.9.3)
+- [qb-core](https://github.com/qbcore-framework/qb-core)
+- [qb-inventory](https://github.com/qbcore-framework/qb-core/qb-inventory) (2.0)
+- [progressbar](https://github.com/qbcore-framework/qb-core/progressbar)
+- [qb-minigames](https://github.com/qbcore-framework/qb-core/qb-minigames)
+
 # Installation
 - Place the folder `mh-brakes` in the folder `[mh]`
 - Add the shared items in `qb-core/shared/items.lua`
@@ -75,7 +82,6 @@ CREATE TABLE IF NOT EXISTS `mh_brakes` (
 # QB Shared items
 ```lua
 brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 2500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
-brake_toolbox                = { name = 'brake_toolbox', label = 'Toolbox', weight = 2500, type = 'item', image = 'brake_toolbox.png', unique = false, useable = true, shouldClose = true, description = 'A toolbox for vehicle tools' },
 brake_cutter                 = { name = 'brake_cutter', label = 'Brake Cutter', weight = 500, type = 'item', image = 'brake_cutter.png', unique = false, useable = true, shouldClose = true, description = 'A Brake Cutter to cut brake lines' },
 brake_line                   = { name = 'brake_line', label = 'Brake Line', weight = 200, type = 'item', image = 'brake_line.png', unique = false, useable = true, shouldClose = true, description = 'A brake line to fix a vehicle brake' },
 ```
