@@ -12,6 +12,8 @@ local canRepair = true
 local random = nil
 local lastIndex = 0
 
+--- Check if a vehicle exist.
+---@param vehicle any
 local function DoesVehicleExist(vehicle)
     local exist = false
     for k, v in pairs(vehicles) do
@@ -22,6 +24,8 @@ local function DoesVehicleExist(vehicle)
     return exist
 end
 
+--- Add vehicle
+---@param vehicle any
 local function AddVehicle(vehicle)
     local exist = DoesVehicleExist(vehicle)
     if not exist then
@@ -30,6 +34,8 @@ local function AddVehicle(vehicle)
     end
 end
 
+--- Remove Vehicle
+---@param vehicle any
 local function RemoveVehicle(vehicle)
     for k, v in pairs(vehicles) do
         if v == vehicle then
@@ -38,6 +44,10 @@ local function RemoveVehicle(vehicle)
     end
 end
 
+--- To send a notifytation
+---@param message string
+---@param type string
+---@param length number
 local function Notify(message, type, length)
     local exist = true
     if Config.NotifyScript == "k5_notify" then
@@ -82,6 +92,14 @@ local function Notify(message, type, length)
     end
 end
 
+--- To draw 3d text On screen
+---@param x number
+---@param y number
+---@param z number
+---@param txt string
+---@param font number
+---@param scale number
+---@param num number
 local function Draw3DText(x, y, z, txt, font, scale, num)
     local _x, _y, _z = table.unpack(GetGameplayCamCoords())
     local distance = 1 / GetDistanceBetweenCoords(_x, _y, _z, x, y, z, true) * 20
@@ -101,14 +119,21 @@ local function Draw3DText(x, y, z, txt, font, scale, num)
     ClearDrawOrigin()
 end
 
+--- Set Brake Force
+---@param vehicle any
+---@param force number
 local function SetBrakeForce(vehicle, force)
     SetVehicleHandlingField(vehicle, "CHandlingData", "fBrakeForce", force)
 end
 
+--- Get Brake Force
+---@param vehicle any
 local function GetBrakeForce(vehicle)
     return GetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce")
 end
 
+--- Display ther required items
+---@param item string
 local function RequiredItems(item)
     local items = {{
         name = item,
@@ -119,6 +144,8 @@ local function RequiredItems(item)
     TriggerEvent('qb-inventory:client:requiredItems', items, false)
 end
 
+--- To load a model
+---@param model string
 local function LoadModel(model)
     if not HasModelLoaded(model) then
         RequestModel(model)
@@ -128,6 +155,7 @@ local function LoadModel(model)
     end
 end
 
+--- Delete all blips from the map
 local function DeleteBlips()
     for k, blip in pairs(blips) do
         if DoesBlipExist(blip) then
@@ -136,6 +164,7 @@ local function DeleteBlips()
     end
 end
 
+--- Delete all shop peds from the map
 local function DeletePeds()
     for k, ped in pairs(peds) do
         if DoesEntityExist(ped) then
@@ -146,6 +175,8 @@ local function DeletePeds()
     end
 end
 
+--- Load blips
+---@param shops table
 local function LoadBlips(shops)
     for k, shop in pairs(shops) do
         if shop.blip.enable then
@@ -162,7 +193,9 @@ local function LoadBlips(shops)
     end
 end
 
-local function CreateShopPed(shops)
+--- Create Shop Peds
+---@param shops table
+local function CreateShopPeds(shops)
     for id, shop in pairs(shops) do
         if shop.enable then
             LoadModel(shop.ped.model)
@@ -192,6 +225,7 @@ local function CreateShopPed(shops)
     end
 end
 
+--- Get Closest Vehicle
 local function GetClosestVehicle()
     local coords = GetEntityCoords(PlayerPedId())
     local vehicles = GetGamePool('CVehicle')
@@ -208,6 +242,8 @@ local function GetClosestVehicle()
     return closestVehicle, closestDistance
 end
 
+--- Get Closest Wheel
+---@param vehicle entity
 local function GetClosestWheel(vehicle)
     local closestWheelIndex = nil
     local closestWheelBone = nil
@@ -228,6 +264,8 @@ local function GetClosestWheel(vehicle)
     return closestWheelIndex, closestWheelBone
 end
 
+--- Start brake oil lLeak
+---@param vehicle entity
 local function StartBrakeOilLeak(vehicle)
     CreateThread(function()
         RequestNamedPtfxAsset("core")
@@ -248,22 +286,27 @@ local function StartBrakeOilLeak(vehicle)
     end)
 end
 
+--- Check if a line has damage
+---@param vehicle entity
 local function LineHasDamage(vehicle)
-    if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or
-        Entity(vehicle).state.wheel_rr then
+    if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr then
         return true
     end
     return false
 end
 
+--- Checks if a line has no damage
+---@param vehicle entity
 local function NoLineDamage(vehicle)
-    if not Entity(vehicle).state.wheel_lf and not Entity(vehicle).state.wheel_rf and not Entity(vehicle).state.wheel_lr and
-        not Entity(vehicle).state.wheel_rr then
+    if not Entity(vehicle).state.wheel_lf and not Entity(vehicle).state.wheel_rf and not Entity(vehicle).state.wheel_lr and not Entity(vehicle).state.wheel_rr then
         return true
     end
     return false
 end
 
+--- Checks if brake line is already broken
+---@param vehicle entity
+---@param bone string
 local function IsBrakelineAlreadyBroken(vehicle, bone)
     if bone == "wheel_lf" and Entity(vehicle).state.wheel_lf then
         return true
@@ -277,6 +320,15 @@ local function IsBrakelineAlreadyBroken(vehicle, bone)
     return false
 end
 
+--- Progressbar
+---@param title string
+---@param item string
+---@param timer number
+---@param vehicle entity
+---@param bone string
+---@param trigger string
+---@param endMessage string
+---@param animData table
 local function Progressbar(title, item, timer, vehicle, bone, trigger, endMessage, animData)
     QBCore.Functions.Progressbar('mh_brakes', title, timer, false, true, {
         disableMovement = true,
@@ -301,6 +353,9 @@ local function Progressbar(title, item, timer, vehicle, bone, trigger, endMessag
     end)
 end
 
+--- Cut brake line
+---@param netid number
+---@param bone string
 local function CutBrakes(netid, bone)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
@@ -326,6 +381,9 @@ local function CutBrakes(netid, bone)
     end
 end
 
+--- Repair brake line
+---@param netid number
+---@param bone string
 local function RepairBrakes(netid, bone)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
@@ -344,6 +402,9 @@ local function RepairBrakes(netid, bone)
     end
 end
 
+--- Refill line with brake oil
+---@param netid number
+---@param bone string
 local function RefillBrakeOil(netid, bone)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
@@ -363,6 +424,8 @@ local function RefillBrakeOil(netid, bone)
     end
 end
 
+--- Shows the damage bones
+---@param vehicle entity
 local function ShowBones(vehicle)
     if isLoggedIn and displayBones then
         if Config.BrakeLine.Bones ~= nil then
@@ -432,6 +495,8 @@ local function ShowBones(vehicle)
     end
 end
 
+--- Show brake oil refill txt
+---@param vehicle entity
 local function ShowBrakeOilRefillTxt(vehicle)
     if isLoggedIn and displayBones then
         local lineHasDamage = LineHasDamage(vehicle)
@@ -498,7 +563,7 @@ end)
 
 RegisterNetEvent('mh-brakes:client:onjoin', function(shops, brakeLine)
     Config.BrakeLine = brakeLine
-    CreateShopPed(shops)
+    CreateShopPeds(shops)
     LoadBlips(shops)
 end)
 
@@ -545,6 +610,7 @@ CreateThread(function()
                     end
                 end
             end
+
             if IsPedInAnyVehicle(PlayerPedId(), false) then
                 if GetVehiclePedIsUsing(PlayerPedId()) ~= 0 then
                     local vehicle = GetVehiclePedIsUsing(PlayerPedId())
