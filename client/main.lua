@@ -30,7 +30,7 @@ local function AddVehicle(vehicle)
     local exist = DoesVehicleExist(vehicle)
     if not exist then
         vehicles[#vehicles + 1] = vehicle
-        Entity(vehicle).state.oil_empty = false
+        Entity(vehicle).state.line_empty = false
     end
 end
 
@@ -605,7 +605,7 @@ CreateThread(function()
                 if hasDamage and not IsPedInAnyVehicle(PlayerPedId(), false) then
                     ShowBones(vehicle)
                 elseif not hasDamage and not IsPedInAnyVehicle(PlayerPedId(), false) then
-                    if Entity(vehicle).state.oil_empty then
+                    if Entity(vehicle).state.line_empty then
                         ShowBrakeOilRefillTxt(vehicle)
                     end
                 end
@@ -616,9 +616,9 @@ CreateThread(function()
                     local vehicle = GetVehiclePedIsUsing(PlayerPedId())
                     if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
                         local hasDamage = LineHasDamage(vehicle)
-                        if lineHasDamage or Entity(vehicle).state.oil_empty then
+                        if lineHasDamage or Entity(vehicle).state.line_empty then
                             SetBrakeForce(vehicle, 0.0)
-                        elseif not hasDamage and not Entity(vehicle).state.oil_empty then
+                        elseif not hasDamage and not Entity(vehicle).state.line_empty then
                             SetBrakeForce(vehicle, 1.0)
                         end
                         if GetBrakeForce(vehicle) == 0.0 then
@@ -638,7 +638,7 @@ CreateThread(function()
             if IsPedInAnyVehicle(PlayerPedId(), true) then
                 local vehicle = GetVehiclePedIsUsing(PlayerPedId())
                 if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
-                    if Entity(vehicle).state.oil_empty == nil then
+                    if Entity(vehicle).state.line_empty == nil then
                         TriggerServerEvent('mh-brakes:server:registerVehicle', NetworkGetNetworkIdFromEntity(vehicle))
                     end
                 end
