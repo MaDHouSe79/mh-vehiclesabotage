@@ -79,6 +79,16 @@ brake_cutter                 = { name = 'brake_cutter', label = 'Brake Cutter', 
 brake_line                   = { name = 'brake_line', label = 'Brake Line', weight = 200, type = 'item', image = 'brake_line.png', unique = false, useable = true, shouldClose = true, description = 'A brake line to fix a vehicle brake' },
 ```
 
+# Replace code in `qb-core` (client side)
+- in `qb-core/client/functions.lua` around line 364
+```lua
+function QBCore.Functions.DeleteVehicle(vehicle)
+    SetEntityAsMissionEntity(vehicle, true, true)
+    TriggerServerEvent('mh-brakes:server:unregisterVehicle', NetworkGetNetworkIdFromEntity(vehicle)) -- or add here
+    DeleteVehicle(vehicle)
+end
+```
+
 # Replace code `qb-inventory` (Server side)
 - in `qb-inventory/server/main.lua` around line 329
 ```lua
