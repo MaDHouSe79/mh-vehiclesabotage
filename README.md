@@ -52,9 +52,9 @@ ensure [mh] # add here.
 ```
 
 # Inventory Images
-![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_oil.png?raw=true)
 ![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_cutter.png?raw=true)
 ![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_line.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_oil.png?raw=true)
 
 
 # SQL Database
