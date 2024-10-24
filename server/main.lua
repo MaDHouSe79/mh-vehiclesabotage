@@ -83,7 +83,6 @@ local function ShowEffect(netid)
     if SV_Config.UseOilMarker then
         local vehicle = NetworkGetEntityFromNetworkId(netid)
         if DoesEntityExist(vehicle) then
-            print("show effect")
             if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or
                 Entity(vehicle).state.wheel_rr or Entity(vehicle).state.oil_empty then
                 TriggerClientEvent('mh-brakes:client:showEffect', -1, netid)
@@ -113,6 +112,11 @@ end
 local function RemoveVehicle(vehicle)
     for k, v in pairs(vehicles) do
         if v == vehicle then
+            Entity(vehicle).state.oil_empty = nil
+            Entity(vehicle).state.wheel_lf = nil
+            Entity(vehicle).state.wheel_rf = nil
+            Entity(vehicle).state.wheel_lr = nil
+            Entity(vehicle).state.wheel_rr = nil
             v = nil
         end
     end
@@ -135,7 +139,6 @@ local function UseItem(src, item)
                 RequiredItems(src, item)
             end
         else
-            print(src, item)
             TriggerClientEvent('mh-brakes:client:notify', src, Lang:t('info.wrong_job', {
                 job = SV_Config.NeededJobType
             }))
@@ -157,7 +160,7 @@ local function CheckVehicle(netid)
             local plate = GetVehicleNumberPlateText(vehicle)
             local exist = DoesPlateExist(plate)
             if exist then
-                print("[mh-brakes] - Create vehicle with broken brakes on plate: " .. plate)
+                if SV_Config.Debug then print("[mh-brakes] - Create vehicle with broken brakes on plate: " .. plate) end
                 AddVehicle(vehicle)
                 local vehicleData = GetVehicleData(plate)
                 if type(vehicleData) == 'table' then
@@ -170,7 +173,7 @@ local function CheckVehicle(netid)
                 end
                 return
             elseif not exist then
-                print("[mh-brakes] - Create vehicle with good brakes on plate: " .. plate)
+                if SV_Config.Debug then print("[mh-brakes] - Create vehicle with good brakes on plate: " .. plate) end
                 AddVehicle(vehicle)
                 Entity(vehicle).state.oil_empty = false
                 Entity(vehicle).state.wheel_lf = false
@@ -339,8 +342,7 @@ RegisterNetEvent('mh-brakes:server:giveitem', function(source, item, amount, pri
                 quality = SV_Config.BrakeLine.Cut.MaxQuality
             }
             Player.Functions.AddItem(SV_Config.BrakeLine.Cut.item, 1, nil, info)
-            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[SV_Config.BrakeLine.Cut.item],
-                'add', 1)
+            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[SV_Config.BrakeLine.Cut.item], 'add', 1)
         end
     end
 end)
@@ -397,7 +399,19 @@ RegisterNetEvent('mh-brakes:server:registerVehicle', function(netid)
     if DoesEntityExist(vehicle) then
         local exist = DoesVehicleExist(vehicle)
         if not exist then
+            if SV_Config.Debug then print("[^3" .. GetCurrentResourceName() .. "^7] - Register vehicle with plate: "..GetVehicleNumberPlateText(vehicle)) end
             AddVehicle(vehicle)
+        end
+    end
+end)
+
+RegisterNetEvent('mh-brakes:server:unregisterVehicle', function(netid)
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) then
+        local exist = DoesVehicleExist(vehicle)
+        if exist then
+            if SV_Config.Debug then print("[^3" .. GetCurrentResourceName() .. "^7] - Inregister vehicle with plate: "..GetVehicleNumberPlateText(vehicle)) end
+            RemoveVehicle(vehicle)
         end
     end
 end)
