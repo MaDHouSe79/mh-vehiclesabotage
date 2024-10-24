@@ -7,8 +7,7 @@ SV_Config.Debug = true               -- Shows prints in the server console.
 SV_Config.AdminHasAccess = true      -- If true a admin has also access to use the needed items.
 SV_Config.UseAsJob = true            -- If true items can only be used when a player has the job, a admin can use it aswell.
 SV_Config.NeededJobType = 'mechanic' -- Job needed.
-
-SV_Config.UseOilMarker = true
+SV_Config.UseOilMarker = true        -- If true when a line is cutted it left a oil mark on t he ground.
 
 SV_Config.Items = {
     --  Default Items do not change the items below this
