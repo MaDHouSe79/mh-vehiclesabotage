@@ -582,7 +582,6 @@ CreateThread(function()
                 local vehicle = GetVehiclePedIsUsing(PlayerPedId())
                 if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
                     if Entity(vehicle).state.oil_empty == nil then
-                        print("[^3" .. GetCurrentResourceName() .. "^7] - Register new vehicle....")
                         TriggerServerEvent('mh-brakes:server:registerVehicle', NetworkGetNetworkIdFromEntity(vehicle))
                     end
                 end
