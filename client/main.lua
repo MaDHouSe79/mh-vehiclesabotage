@@ -631,19 +631,3 @@ CreateThread(function()
         Wait(0)
     end
 end)
-
-CreateThread(function()
-    while true do
-        if isLoggedIn then
-            if IsPedInAnyVehicle(PlayerPedId(), true) then
-                local vehicle = GetVehiclePedIsUsing(PlayerPedId())
-                if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
-                    if Entity(vehicle).state.line_empty == nil then
-                        TriggerServerEvent('mh-brakes:server:registerVehicle', NetworkGetNetworkIdFromEntity(vehicle))
-                    end
-                end
-            end
-        end
-        Wait(1000)
-    end
-end)
