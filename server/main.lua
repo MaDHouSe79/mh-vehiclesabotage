@@ -126,6 +126,10 @@ local function AddVehicle(vehicle)
     if not exist then
         vehicles[#vehicles + 1] = vehicle
         Entity(vehicle).state.line_empty = false
+        Entity(vehicle).state.wheel_lf = false
+        Entity(vehicle).state.wheel_rf = false
+        Entity(vehicle).state.wheel_lr = false
+        Entity(vehicle).state.wheel_rr = false
     end
 end
 
@@ -423,36 +427,27 @@ RegisterServerEvent("mh-brakes:server:syncFixed", function(netid)
     end
 end)
 
-RegisterNetEvent('mh-brakes:server:checkVehicle', function(netid)
-    local vehicle = NetworkGetEntityFromNetworkId(netid)
-    if DoesEntityExist(vehicle) then
-        CheckVehicle(netid)
+RegisterNetEvent("baseevents:enteredVehicle", function(currentVehicle, currentSeat, vehicleDisplayName, netId)
+    local src = source
+    local vehicle = NetworkGetEntityFromNetworkId(netId)
+    if DoesEntityExist(vehicle) and currentSeat == -1 then
+        local playerName = GetPlayerName(src)
+        if SV_Config.Debug then
+            print("[^3" .. GetCurrentResourceName() .. "^7] - Player "..playerName.." Entered Vehicle: "..vehicleDisplayName.." Seat: "..currentSeat.." Entity: "..currentVehicle.." Netid:"..netId)
+        end
+        CheckVehicle(netId)
     end
 end)
 
-RegisterNetEvent('mh-brakes:server:registerVehicle', function(netid)
-    local vehicle = NetworkGetEntityFromNetworkId(netid)
-    if DoesEntityExist(vehicle) then
-        local exist = DoesVehicleExist(vehicle)
-        if not exist then
-            if SV_Config.Debug then
-                print("[^3" .. GetCurrentResourceName() .. "^7] - Register vehicle with plate: " .. GetVehicleNumberPlateText(vehicle))
-            end
-            AddVehicle(vehicle)
+RegisterNetEvent('baseevents:leftVehicle', function(currentVehicle, currentSeat, vehicleDisplayName, netId)
+    local src = source
+    local vehicle = NetworkGetEntityFromNetworkId(netId)
+    if DoesEntityExist(vehicle) and currentSeat == -1 then
+        local playerName = GetPlayerName(src)
+        if SV_Config.Debug then
+            print("[^3" .. GetCurrentResourceName() .. "^7] - Player "..playerName.." Left Vehicle: "..vehicleDisplayName.." Seat: "..currentSeat.." Entity: "..currentVehicle.." Netid:"..netId)
         end
-    end
-end)
-
-RegisterNetEvent('mh-brakes:server:unregisterVehicle', function(netid)
-    local vehicle = NetworkGetEntityFromNetworkId(netid)
-    if DoesEntityExist(vehicle) then
-        local exist = DoesVehicleExist(vehicle)
-        if exist then
-            if SV_Config.Debug then
-                print("[^3" .. GetCurrentResourceName() .. "^7] - Inregister vehicle with plate: " .. GetVehicleNumberPlateText(vehicle))
-            end
-            RemoveVehicle(vehicle)
-        end
+        RemoveVehicle(vehicle)
     end
 end)
 
