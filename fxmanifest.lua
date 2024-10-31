@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 author 'MaDHouSe'
 description 'MH Brakes - Sabotage vehicle brakelines.'
-version '1.0'
+version '1.0.0'
 
 shared_scripts {'@ox_lib/init.lua', '@qb-core/shared/locale.lua', 'locales/en.lua','config.lua'}
 client_scripts {'client/main.lua'}
