@@ -148,6 +148,17 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
 end)
 ```
 
+
+```lua
+VehicleMenu.items[#VehicleMenu.items + 1] = {
+    id = 'check_brakeline',
+    title = 'Check Vehicle',
+    icon = "check",
+    type = 'client',
+    event = "mh-brakes:client:checkvehicle",
+    shouldClose = true
+}
+```
 # LICENSE
 [GPL LICENSE](./LICENSE)<br />
 &copy; [MaDHouSe79](https://www.youtube.com/@MaDHouSe79)

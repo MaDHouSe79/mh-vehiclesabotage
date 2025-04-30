@@ -93,19 +93,6 @@ local function IsALineBroken(vehicle)
     return false
 end
 
---- Show the oil leak effect
----@param netid number
-local function ShowEffect(netid)
-    if SV_Config.UseOilMarker then
-        local vehicle = NetworkGetEntityFromNetworkId(netid)
-        if DoesEntityExist(vehicle) then
-            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.line_empty then
-                TriggerClientEvent('mh-brakes:client:showEffect', -1, netid)
-            end
-        end
-    end
-end
-
 --- Does vehicle exist in the list
 ---@param vehicle entity
 local function DoesVehicleExist(vehicle)
@@ -193,7 +180,6 @@ local function CheckVehicle(netid)
                     Entity(vehicle).state.wheel_lr = (vehicleData.wheel_lr == 1) or false
                     Entity(vehicle).state.wheel_rr = (vehicleData.wheel_rr == 1) or false
                     Entity(vehicle).state.line_empty = (vehicleData.line_empty == 1) or false
-                    ShowEffect(netid)
                 end
                 return
             elseif not exist then
@@ -239,7 +225,6 @@ local function UpdateLineData(vehicle, bone, plate, type)
                 Entity(vehicle).state.wheel_rr = true
                 Entity(vehicle).state.line_empty = true
             end
-            ShowEffect(NetworkGetNetworkIdFromEntity(vehicle))
             goto run
         elseif type == "wrecked" then
             if not bone then return end
@@ -304,12 +289,7 @@ RegisterNetEvent('mh-brakes:server:openShop', function(shopId)
     if not Player then return end
     if SV_Config.Shops[shopId] then
         local shopitems = GetShopItems(shopId)
-        exports['qb-inventory']:CreateShop({
-            name = 'toolsmarket-' .. shopId,
-            label = SV_Config.Shops[shopId].label,
-            slots = #shopitems,
-            items = shopitems
-        })
+        exports['qb-inventory']:CreateShop({name = 'toolsmarket-' .. shopId, label = SV_Config.Shops[shopId].label, slots = #shopitems, items = shopitems})
         exports['qb-inventory']:OpenShop(src, 'toolsmarket-' .. shopId)
     else
         TriggerClientEvent('mh-brakes:client:notify', src, Lang:t('info.shop_not_found'))
@@ -390,6 +370,17 @@ RegisterServerEvent("mh-brakes:server:syncFixed", function(netid)
     end
 end)
 
+RegisterServerEvent("mh-vehiclesabotage:server:syncOilEffect", function(netid)
+    if SV_Config.UseOilMarker then
+        local vehicle = NetworkGetEntityFromNetworkId(netid)
+        if DoesEntityExist(vehicle) then
+            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.line_empty then
+                TriggerClientEvent('mh-brakes:client:showEffect', -1, netid)
+            end
+        end
+    end
+end)
+
 RegisterNetEvent("baseevents:enteredVehicle", function(currentVehicle, currentSeat, vehicleDisplayName, netId)
     local src = source
     local vehicle = NetworkGetEntityFromNetworkId(netId)
@@ -410,7 +401,7 @@ RegisterNetEvent('baseevents:leftVehicle', function(currentVehicle, currentSeat,
         if SV_Config.Debug then
             print("[^3" .. GetCurrentResourceName() .. "^7] - Player " .. playerName .. " Left Vehicle: " .. vehicleDisplayName .. " Seat: " .. currentSeat .. " Entity: " .. currentVehicle .. " Netid:" .. netId)
         end
-        RemoveVehicle(vehicle)
+        CheckVehicle(netid)
     end
 end)
 

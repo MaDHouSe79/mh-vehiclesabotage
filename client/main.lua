@@ -5,6 +5,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local PlayerData = {}
 local peds = {}
 local blips = {}
+local hasLeaked = {}
 local isLoggedIn = false
 local displayBones = true
 local canRepair = true
@@ -70,6 +71,12 @@ local function RequiredItems(item)
     TriggerEvent('qb-inventory:client:requiredItems', items, true)
     Wait(5000)
     TriggerEvent('qb-inventory:client:requiredItems', items, false)
+end
+
+local function GetDistance(pos1, pos2)
+    if pos1 ~= nil and pos2 ~= nil then
+        return #(vector3(pos1.x, pos1.y, pos1.z) - vector3(pos2.x, pos2.y, pos2.z))
+    end
 end
 
 --- To load a model
@@ -197,9 +204,7 @@ end
 local function StartBrakeOilLeak(vehicle)
     CreateThread(function()
         RequestNamedPtfxAsset("core")
-        while not HasNamedPtfxAssetLoaded("core") do
-            Wait(1)
-        end
+        while not HasNamedPtfxAssetLoaded("core") do Wait(1) end
         local particle = {}
         for i = 0, 25 do
             UseParticleFxAsset("core")
@@ -217,7 +222,7 @@ end
 --- Check if a line has damage
 ---@param vehicle entity
 local function LineHasDamage(vehicle)
-    if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr then
+    if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.line_empty then
         return true
     end
     return false
@@ -294,13 +299,17 @@ local function CutBrakes(netid, bone)
             if isBrakelineAlreadyBroken then
                 return Notify(Lang:t('info.brakeline_is_already_broken'), "success", 5000)
             elseif not isBrakelineAlreadyBroken then
-                local success = UseSkillBar()
-                if success then
-                    Progressbar(Lang:t('info.cutting_brakes'), Config.BrakeLine.Cut.item, Config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), Config.BrakeLine.Cut)
+                if Config.UseMiniGame then
+                    local success = UseSkillBar()
+                    if success then
+                        Progressbar(Lang:t('info.cutting_brakes'), Config.BrakeLine.Cut.item, Config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), Config.BrakeLine.Cut)
+                    else
+                        ClearPedTasks(PlayerPedId())
+                        canRepair = true
+                        displayBones = true
+                    end
                 else
-                    ClearPedTasks(PlayerPedId())
-                    canRepair = true
-                    displayBones = true
+                    Progressbar(Lang:t('info.cutting_brakes'), Config.BrakeLine.Cut.item, Config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), Config.BrakeLine.Cut)
                 end
             end
         else
@@ -345,6 +354,7 @@ local function RefillBrakeOil(netid, bone)
             elseif noDamage then
                 SetVehicleDoorOpen(vehicle, 4, false, true)
                 Progressbar(Lang:t('info.refuel_brake_oil'), Config.BrakeLine.Oil.item, Config.BrakeLine.Oil.timer, vehicle, bone, 'mh-brakes:server:syncFixed', Lang:t('info.brakes_oil_has_refilled'), Config.BrakeLine.Oil)
+                if hasLeaked[netid] then hasLeaked[netid].status = false end
             end
         else
             Notify(Lang:t('info.vehicle_has_no_brakes'), "error", 5000)
@@ -365,7 +375,6 @@ local function ShowBones(vehicle)
                 local wheelBoneIndex = GetEntityBoneIndexByName(vehicle, wheelBone)
                 if wheelBoneIndex ~= -1 then
                     local wheels = {}
-                    local wheelPos = GetWorldPositionOfEntityBone(vehicle, wheelBoneIndex)
                     local offset = GetWorldPositionOfEntityBone(vehicle, GetEntityBoneIndexByName(vehicle, wheelBone))
                     local distance = #(vector3(playerCoords.x, playerCoords.y, playerCoords.z) - vector3(offset.x, offset.y, offset.z))
                     if QBCore.Functions.HasItem(Config.BrakeLine.Repair.item, 1) then
@@ -375,36 +384,18 @@ local function ShowBones(vehicle)
                         refillTxt = Lang:t("info.refuel_brake_oil")
                     end
                     if Entity(vehicle).state.wheel_lf and wheelBone == 'wheel_lf' then
-                        wheels[#wheels + 1] = {
-                            index = wheelIndex,
-                            bone = Lang:t('info.brakeline_is_brakeline'),
-                            color = "~r~"
-                        }
+                        wheels[#wheels + 1] = { index = wheelIndex, bone = Lang:t('info.brakeline_is_brakeline'), color = "~r~" }
                     end
                     if Entity(vehicle).state.wheel_rf and wheelBone == 'wheel_rf' then
-                        wheels[#wheels + 1] = {
-                            index = wheelIndex,
-                            bone = Lang:t('info.brakeline_is_brakeline'),
-                            color = "~r~"
-                        }
+                        wheels[#wheels + 1] = { index = wheelIndex, bone = Lang:t('info.brakeline_is_brakeline'), color = "~r~" }
                     end
                     if Entity(vehicle).state.wheel_lr and wheelBone == 'wheel_lr' then
-                        wheels[#wheels + 1] = {
-                            index = wheelIndex,
-                            bone = Lang:t('info.brakeline_is_brakeline'),
-                            color = "~r~"
-                        }
+                        wheels[#wheels + 1] = { index = wheelIndex, bone = Lang:t('info.brakeline_is_brakeline'), color = "~r~" }
                     end
                     if Entity(vehicle).state.wheel_rr and wheelBone == 'wheel_rr' then
-                        wheels[#wheels + 1] = {
-                            index = wheelIndex,
-                            bone = Lang:t('info.brakeline_is_brakeline'),
-                            color = "~r~"
-                        }
+                        wheels[#wheels + 1] = { index = wheelIndex, bone = Lang:t('info.brakeline_is_brakeline'), color = "~r~" }
                     end
-                    if wheelBone == 'wheel_lr' or wheelBone == 'wheel_rr' then
-                        textOffset = 0.02
-                    end
+                    if wheelBone == 'wheel_lr' or wheelBone == 'wheel_rr' then textOffset = 0.02 end
                     if #wheels >= 1 then
                         for k, wheel in pairs(wheels) do
                             if distance < 1.5 then
@@ -423,36 +414,54 @@ local function ShowBones(vehicle)
     end
 end
 
+local function GetVehicleInFrontOfPlayer(ped)
+    local coords = GetEntityCoords(ped)
+    local offset = GetOffsetFromEntityInWorldCoords(ped, 0.0, 2.0, 0.0)
+    local rayHandle = CastRayPointToPoint(coords.x, coords.y, coords.z - 1.3, offset.x, offset.y, offset.z, 10, ped, 0)
+    local retval, hit, endCoords, surfaceNormal, entityHit = GetRaycastResult(rayHandle)
+    if IsEntityAVehicle(entityHit) then return entityHit end
+    return nil
+end
+
 --- Show brake oil refill txt
 ---@param vehicle entity
 local function ShowBrakeOilRefillTxt(vehicle)
     if isLoggedIn and displayBones then
         local lineHasDamage = LineHasDamage(vehicle)
-        if lineHasDamage then
-            canRepair = false
-        end
+        if lineHasDamage then canRepair = false end
         local playerCoords = GetEntityCoords(PlayerPedId())
         local textOffset = 0.15
         local lines = {'wheel_lf', 'wheel_rf', 'wheel_lr', 'wheel_rr'}
-        if random == nil then
-            random = lines[math.random(1, #lines)]
-        end
-        local lf = IsBrakelineAlreadyBroken(vehicle, 'wheel_lf')
-        local rf = IsBrakelineAlreadyBroken(vehicle, 'wheel_rf')
-        local lr = IsBrakelineAlreadyBroken(vehicle, 'wheel_lr')
-        local rr = IsBrakelineAlreadyBroken(vehicle, 'wheel_rr')
+        if random == nil then random = lines[math.random(1, #lines)] end
         local refillTxt = ""
         if canRepair and not lineHasDamage then
-            if QBCore.Functions.HasItem("brake_oil", 1) then
-                refillTxt = Lang:t("info.refuel_brake_oil")
-            end
+            if QBCore.Functions.HasItem("brake_oil", 1) then refillTxt = Lang:t("info.refuel_brake_oil") end
             local offset = GetWorldPositionOfEntityBone(vehicle, GetEntityBoneIndexByName(vehicle, random))
             local distance = #(vector3(playerCoords.x, playerCoords.y, playerCoords.z) - vector3(offset.x, offset.y, offset.z))
-            if distance < 1.5 then
-                Draw3DText(offset.x, offset.y, offset.z + textOffset * lastIndex, "~o~" .. refillTxt, 4, 0.06, 0.06)
-            end
+            if distance < 1.5 then Draw3DText(offset.x, offset.y, offset.z + textOffset * lastIndex, "~o~" .. refillTxt, 4, 0.06, 0.06) end
         end
     end
+end
+
+local function CheckLine(vehicle)
+    local lineHasDamage = LineHasDamage(vehicle)
+    if lineHasDamage or Entity(vehicle).state.line_empty then
+        ShowBones(vehicle)
+        Notify(Lang:t("info.lines_has_damage"), "error", 5000)
+    elseif not lineHasDamage and not Entity(vehicle).state.line_empty then
+        Notify(Lang:t("info.lines_has_no_damage"), "error", 5000)
+    end
+end
+
+local function LossControl(vehicle)
+    print("LossControl")
+    SetBrakeForce(vehicle, 0.0)
+    SetVehicleReduceGrip(vehicle, true)
+    Wait(math.random(1, 3) * 1000)
+    SetVehicleReduceGrip(vehicle, false)
+    local netid = VehToNet(vehicle)
+    if hasLeaked[netid] and hasLeaked[netid].status then return end
+    SetBrakeForce(vehicle, 1.0)
 end
 
 AddEventHandler('onResourceStop', function(resource)
@@ -496,10 +505,17 @@ RegisterNetEvent('mh-brakes:client:onjoin', function(data)
 end)
 
 RegisterNetEvent('mh-brakes:client:showEffect', function(netid)
+    if hasLeaked[netid] and hasLeaked[netid].status then return end
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
+        hasLeaked[netid] = {status = true, coords = GetEntityCoords(vehicle)}
         StartBrakeOilLeak(vehicle)
     end
+end)
+
+RegisterNetEvent('mh-brakes:client:checkvehicle', function()
+    local vehicle = GetVehicleInFrontOfPlayer(PlayerPedId())
+    if vehicle ~= nil and vehicle ~= -1 then CheckLine(vehicle) end
 end)
 
 RegisterNetEvent('mh-brakes:client:UseItem', function(item)
@@ -524,33 +540,48 @@ RegisterNetEvent('mh-brakes:client:UseItem', function(item)
     end
 end)
 
+local countBraking = 0
+local maxBeforeBrakeCount = math.random(5, 10)
 CreateThread(function()
     while true do
         if isLoggedIn then
-            local vehicle, distance = GetClosestVehicle()
-            if vehicle > 0 and distance <= 2.5 then
-                local hasDamage = LineHasDamage(vehicle)
-                if hasDamage and not IsPedInAnyVehicle(PlayerPedId(), false) then
-                    ShowBones(vehicle)
-                elseif not hasDamage and not IsPedInAnyVehicle(PlayerPedId(), false) then
-                    if Entity(vehicle).state.line_empty then
-                        ShowBrakeOilRefillTxt(vehicle)
+            if IsPedInAnyVehicle(PlayerPedId(), false) and GetVehiclePedIsUsing(PlayerPedId()) ~= 0 then
+                local vehicle = GetVehiclePedIsUsing(PlayerPedId())
+                if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+                    local hasDamage = LineHasDamage(vehicle)
+                    if GetBrakeForce(vehicle) == 0.0 then DisableControlAction(0, 76, true) end
+                    if hasDamage or Entity(vehicle).state.line_empty then
+                        local netid = NetworkGetNetworkIdFromEntity(vehicle)
+                        if IsControlJustReleased(0, 72) or IsControlJustReleased(0, 76) then
+                            if countBraking < maxBeforeBrakeCount then countBraking = countBraking + 1 end
+                        end
+                        if countBraking == maxBeforeBrakeCount then
+                            countBraking = 0
+                            SetBrakeForce(vehicle, 0.0)
+                            TriggerServerEvent('mh-vehiclesabotage:server:syncOilEffect', netid)
+                        end
+                    elseif not hasDamage and not Entity(vehicle).state.line_empty then
+                        SetBrakeForce(vehicle, 1.0)
                     end
                 end
             end
+        end
+        Wait(0)
+    end
+end)
 
+CreateThread(function()
+    while true do
+        if isLoggedIn then
             if IsPedInAnyVehicle(PlayerPedId(), false) then
-                if GetVehiclePedIsUsing(PlayerPedId()) ~= 0 then
-                    local vehicle = GetVehiclePedIsUsing(PlayerPedId())
-                    if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
-                        local hasDamage = LineHasDamage(vehicle)
-                        if lineHasDamage or Entity(vehicle).state.line_empty then
-                            SetBrakeForce(vehicle, 0.0)
-                        elseif not hasDamage and not Entity(vehicle).state.line_empty then
-                            SetBrakeForce(vehicle, 1.0)
-                        end
-                        if GetBrakeForce(vehicle) == 0.0 then
-                            DisableControlAction(0, 76, true)
+                local vehicle = GetVehiclePedIsUsing(PlayerPedId())
+                if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+                    local vehicleCoords = GetEntityCoords(vehicle)
+                    for k, v in pairs(hasLeaked) do
+                        if v.status and v.coords ~= nil then
+                            local distance = GetDistance(v.coords, vehicleCoords)
+                            print(distance)
+                            if distance <= 5.0 then LossControl(vehicle) end
                         end
                     end
                 end
