@@ -49,46 +49,10 @@ end
 ---@param type string
 ---@param length number
 local function Notify(message, type, length)
-    local exist = true
-    if Config.NotifyScript == "k5_notify" then
-        if GetResourceState("k5_notify") ~= 'missing' then
-            exports["k5_notify"]:notify("MH Brakes", message, "k5style", length)
-        else
-            exist = false
-        end
-    elseif Config.NotifyScript == "okokNotify" then
-        if GetResourceState("okokNotify") ~= 'missing' then
-            exports['okokNotify']:Alert("MH Brakes", message, length, type)
-        else
-            exist = false
-        end
-    elseif Config.NotifyScript == "ox_lib" then
-        if GetResourceState("k5_notify") ~= 'missing' then
-            lib.notify({
-                title = "MH Brakes",
-                description = message,
-                type = type
-            })
-        else
-            exist = false
-        end
-    elseif Config.NotifyScript == "Roda_Notifications" then
-        if GetResourceState("Roda_Notifications") ~= 'missing' then
-            exports['Roda_Notifications']:showNotify("MH Brakes", message, type, length)
-        else
-            exist = false
-        end
-    elseif Config.NotifyScript == "qb" then
-        QBCore.Functions.Notify({
-            text = "MH Brakes",
-            caption = message
-        }, type, length)
-    end
-    if not exist then
-        QBCore.Functions.Notify({
-            text = "MH Brakes",
-            caption = message
-        }, type, length)
+    if GetResourceState("ox_lib") ~= 'missing' then
+        lib.notify({title = "MH Brakes", description = message, type = type})
+    else
+        QBCore.Functions.Notify({text = "MH Brakes", caption = message}, type, length)
     end
 end
 
@@ -135,10 +99,7 @@ end
 --- Display ther required items
 ---@param item string
 local function RequiredItems(item)
-    local items = {{
-        name = item,
-        image = QBCore.Shared.Items[item].image
-    }}
+    local items = {{name = item, image = QBCore.Shared.Items[item].image}}
     TriggerEvent('qb-inventory:client:requiredItems', items, true)
     Wait(5000)
     TriggerEvent('qb-inventory:client:requiredItems', items, false)
