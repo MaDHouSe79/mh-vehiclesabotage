@@ -5,7 +5,7 @@ SV_Config = {}
 
 SV_Config.Debug = true               -- Shows prints in the server console.
 SV_Config.AdminHasAccess = true      -- If true a admin has also access to use the needed items.
-SV_Config.UseAsJob = true            -- If true items can only be used when a player has the job, a admin can use it aswell.
+SV_Config.UseAsJob = false           -- If true items can only be used when a player has the job, a admin can use it aswell.
 SV_Config.NeededJobType = 'mechanic' -- Job needed.
 SV_Config.UseOilMarker = true        -- If true when a line is cutted it left a oil mark on t he ground.
 
@@ -14,9 +14,6 @@ SV_Config.Items = {
     [1] = {name = "brake_cutter", price = 100, amount = 10},
     [2] = {name = "brake_line",  price = 500, amount = 10},
     [3] = {name = "brake_oil", price = 150, amount = 10},
-    -- More items, you can edit items below this part.
-    -- [4] = {name = "water_bottle", price = 2, amount = 10},
-    -- [5] = {name = "tosti", price = 2, amount = 10},
 }
 
 SV_Config.Shops = {
@@ -36,11 +33,11 @@ SV_Config.Shops = {
             scale = 0.8,
             colour = 4,    -- if you want to change this see (https://docs.fivem.net/docs/game-references/blips/)
         }
-    },   
+    },
     -- you can add more shops below this, copy the block above this and past it below this and change the coords.
 }
 
-SV_Config.BrakeLine = { 
+SV_Config.BrakeLine = {
     Cut = {
         item = "brake_cutter",
         timer = 10000,
@@ -50,7 +47,7 @@ SV_Config.BrakeLine = {
             flags = 1
         },
         maxUse = 4,
-        ReduseOnUse = 5, 
+        ReduseOnUse = 5,
         MaxQuality = 100
     },
     Repair = {
@@ -76,5 +73,5 @@ SV_Config.BrakeLine = {
         [2] = 'wheel_rf', -- Right front wheel.
         [3] = 'wheel_lr', -- Left Back wheel.
         [4] = 'wheel_rr'  -- Right Back wheel.
-    },  
+    },
 }

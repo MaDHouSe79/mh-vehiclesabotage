@@ -48,10 +48,9 @@ end
 ---@param src number
 ---@param item string
 local function RequiredItems(src, item)
-    local items = {{
-        name = item,
-        image = QBCore.Shared.Items[item].image
-    }}
+    local items = {
+        { name = item, image = QBCore.Shared.Items[item].image }
+    }
     TriggerClientEvent('qb-inventory:client:requiredItems', src, items, true)
     Wait(5000)
     TriggerClientEvent('qb-inventory:client:requiredItems', src, items, false)
@@ -61,7 +60,7 @@ end
 ---@param plate any
 local function DoesPlateExist(plate)
     local found = false
-    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', {plate})
+    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', { plate })
     if result ~= nil and result[1] ~= nil and result[1].plate ~= nil and result[1].plate == plate then
         found = true
     end
@@ -72,7 +71,7 @@ end
 ---@param plate string
 local function GetVehicleData(plate)
     local data = {}
-    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', {plate})
+    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', { plate })
     if result ~= nil and result[1] ~= nil then
         data = result[1]
     end
@@ -136,7 +135,7 @@ end
 --- Remove vehicle from list
 ---@param vehicle entity
 local function RemoveVehicle(vehicle)
-    for k, v in pairs(vehicles) do
+    for _, v in pairs(vehicles) do
         if v == vehicle then
             Entity(vehicle).state.line_empty = nil
             Entity(vehicle).state.wheel_lf = nil
@@ -153,13 +152,9 @@ end
 ---@param item string
 local function UseItem(src, item)
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then
-        return
-    end
+    if not Player then return end
     local canUse = IsCorrectItem(item)
-    if not canUse then
-        return
-    end
+    if not canUse then return end
     if SV_Config.UseAsJob then
         if Player.PlayerData.job.type == SV_Config.NeededJobType and Player.PlayerData.job.onduty or IsAdmin(src) then
             if Player.Functions.HasItem(item, 1) then
@@ -168,9 +163,7 @@ local function UseItem(src, item)
                 RequiredItems(src, item)
             end
         else
-            TriggerClientEvent('mh-brakes:client:notify', src, Lang:t('info.wrong_job', {
-                job = SV_Config.NeededJobType
-            }))
+            TriggerClientEvent('mh-brakes:client:notify', src, Lang:t('info.wrong_job', {job = SV_Config.NeededJobType}))
         end
     elseif not SV_Config.UseAsJob then
         if Player.Functions.HasItem(item, 1) then
@@ -191,9 +184,7 @@ local function CheckVehicle(netid)
             local plate = GetVehicleNumberPlateText(vehicle)
             local exist = DoesPlateExist(plate)
             if exist then
-                if SV_Config.Debug then
-                    print("[mh-brakes] - Create vehicle with broken brakes on plate: " .. plate)
-                end
+                if SV_Config.Debug then print("[mh-brakes] - Create vehicle with broken brakes on plate: " .. plate) end
                 AddVehicle(vehicle)
                 local vehicleData = GetVehicleData(plate)
                 if type(vehicleData) == 'table' then
@@ -206,9 +197,7 @@ local function CheckVehicle(netid)
                 end
                 return
             elseif not exist then
-                if SV_Config.Debug then
-                    print("[mh-brakes] - Create vehicle with good brakes on plate: " .. plate)
-                end
+                if SV_Config.Debug then print("[mh-brakes] - Create vehicle with good brakes on plate: " .. plate) end
                 AddVehicle(vehicle)
                 Entity(vehicle).state.line_empty = false
                 Entity(vehicle).state.wheel_lf = false
@@ -227,16 +216,12 @@ end
 ---@param plate any
 ---@param type any
 local function UpdateLineData(vehicle, bone, plate, type)
-    if not vehicle or not type or not plate then
-        return
-    end
+    if not vehicle or not type or not plate then return end
     if DoesEntityExist(vehicle) then
         local query, data = nil, nil
         if type == "insert" then
-            if not bone then
-                return
-            end
-            data = {1, plate, 1}
+            if not bone then return end
+            data = { 1, plate, 1 }
             if bone == 'wheel_lf' then
                 query = "INSERT INTO mh_brakes (wheel_lf, plate, line_empty) VALUES (?, ?, ?)"
                 Entity(vehicle).state.wheel_lf = true
@@ -257,10 +242,8 @@ local function UpdateLineData(vehicle, bone, plate, type)
             ShowEffect(NetworkGetNetworkIdFromEntity(vehicle))
             goto run
         elseif type == "wrecked" then
-            if not bone then
-                return
-            end
-            data = {1, plate}
+            if not bone then return end
+            data = { 1, plate }
             if bone == 'wheel_lf' then
                 query = "UPDATE mh_brakes SET wheel_lf = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_lf = true
@@ -279,10 +262,8 @@ local function UpdateLineData(vehicle, bone, plate, type)
                 goto run
             end
         elseif type == "repair" then
-            if not bone then
-                return
-            end
-            data = {0, plate}
+            if not bone then return end
+            data = { 0, plate }
             if bone == 'wheel_lf' then
                 query = "UPDATE mh_brakes SET wheel_lf = ? WHERE plate = ?"
                 Entity(vehicle).state.wheel_lf = false
@@ -301,7 +282,7 @@ local function UpdateLineData(vehicle, bone, plate, type)
                 goto run
             end
         elseif type == "refilled" then
-            data = {plate}
+            data = { plate }
             query = "DELETE FROM mh_brakes WHERE plate = ?"
             Entity(vehicle).state.line_empty = false
             Entity(vehicle).state.wheel_lf = false
@@ -320,9 +301,7 @@ end
 RegisterNetEvent('mh-brakes:server:openShop', function(shopId)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then
-        return
-    end
+    if not Player then return end
     if SV_Config.Shops[shopId] then
         local shopitems = GetShopItems(shopId)
         exports['qb-inventory']:CreateShop({
@@ -339,26 +318,18 @@ end)
 
 RegisterServerEvent("mh-brakes:server:removeItem", function(item)
     local src = source
-    if not item then
-        return
-    end
+    if not item then return end
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then
-        return
-    end
+    if not Player then return end
     local canRemove = IsCorrectItem(item)
-    if not canRemove then
-        return
-    end
+    if not canRemove then return end
     local tmpItem = exports['qb-inventory']:GetItemByName(src, item)
     if tmpItem ~= nil then
         if tmpItem.name == 'brake_cutter' then
             if tmpItem.info ~= nil and tmpItem.info.quality ~= nil then
                 local currenItem = Player.PlayerData.items[tmpItem.slot]
                 currenItem.info.quality = tmpItem.info.quality - SV_Config.BrakeLine.Cut.ReduseOnUse
-                if currenItem.amount <= 0 then
-                    currenItem.amount = 0
-                end
+                if currenItem.amount <= 0 then currenItem.amount = 0 end
                 Player.Functions.SetInventory(Player.PlayerData.items, true)
             end
         else
@@ -371,16 +342,12 @@ end)
 RegisterNetEvent('mh-brakes:server:giveitem', function(source, item, amount, price)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then
-        return
-    end
+    if not Player then return end
     if item == SV_Config.BrakeLine.Cut.item then
         local current = Player.Functions.GetMoney(Config.MoneyType)
         if current >= price then
             Player.Functions.RemoveMoney(Config.MoneyType, amount)
-            local info = {
-                quality = SV_Config.BrakeLine.Cut.MaxQuality
-            }
+            local info = { quality = SV_Config.BrakeLine.Cut.MaxQuality }
             Player.Functions.AddItem(SV_Config.BrakeLine.Cut.item, 1, nil, info)
             TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[SV_Config.BrakeLine.Cut.item], 'add', 1)
         end
@@ -389,7 +356,7 @@ end)
 
 RegisterServerEvent("mh-brakes:server:onjoin", function()
     local src = source
-    TriggerClientEvent('mh-brakes:client:onjoin', src, SV_Config.Shops, SV_Config.BrakeLine)
+    TriggerClientEvent('mh-brakes:client:onjoin', src, {shops = SV_Config.Shops, brakeLine = SV_Config.BrakeLine})
 end)
 
 RegisterServerEvent("mh-brakes:server:syncDestroy", function(netid, bone)
@@ -410,9 +377,7 @@ RegisterServerEvent("mh-brakes:server:syncRepair", function(netid, bone)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
         local exist = DoesPlateExist(plate)
-        if exist then
-            UpdateLineData(vehicle, bone, plate, "repair")
-        end
+        if exist then UpdateLineData(vehicle, bone, plate, "repair") end
     end
 end)
 
@@ -421,9 +386,7 @@ RegisterServerEvent("mh-brakes:server:syncFixed", function(netid)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
         local isALineBroken = IsALineBroken(vehicle)
-        if not isALineBroken then
-            UpdateLineData(vehicle, nil, plate, "refilled")
-        end
+        if not isALineBroken then UpdateLineData(vehicle, nil, plate, "refilled") end
     end
 end)
 
@@ -433,7 +396,7 @@ RegisterNetEvent("baseevents:enteredVehicle", function(currentVehicle, currentSe
     if DoesEntityExist(vehicle) and currentSeat == -1 then
         local playerName = GetPlayerName(src)
         if SV_Config.Debug then
-            print("[^3" .. GetCurrentResourceName() .. "^7] - Player "..playerName.." Entered Vehicle: "..vehicleDisplayName.." Seat: "..currentSeat.." Entity: "..currentVehicle.." Netid:"..netId)
+            print("[^3" .. GetCurrentResourceName() .. "^7] - Player " .. playerName .. " Entered Vehicle: " .. vehicleDisplayName .. " Seat: " .. currentSeat .. " Entity: " .. currentVehicle .. " Netid:" .. netId)
         end
         CheckVehicle(netId)
     end
@@ -445,7 +408,7 @@ RegisterNetEvent('baseevents:leftVehicle', function(currentVehicle, currentSeat,
     if DoesEntityExist(vehicle) and currentSeat == -1 then
         local playerName = GetPlayerName(src)
         if SV_Config.Debug then
-            print("[^3" .. GetCurrentResourceName() .. "^7] - Player "..playerName.." Left Vehicle: "..vehicleDisplayName.." Seat: "..currentSeat.." Entity: "..currentVehicle.." Netid:"..netId)
+            print("[^3" .. GetCurrentResourceName() .. "^7] - Player " .. playerName .. " Left Vehicle: " .. vehicleDisplayName .. " Seat: " .. currentSeat .. " Entity: " .. currentVehicle .. " Netid:" .. netId)
         end
         RemoveVehicle(vehicle)
     end
@@ -485,6 +448,6 @@ CreateThread(function()
             `wheel_rr` int(10) NOT NULL DEFAULT 0,
             `line_empty` int(10) NOT NULL DEFAULT 0,
             PRIMARY KEY (`id`) USING BTREE
-        ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;    
+        ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
     ]])
 end)

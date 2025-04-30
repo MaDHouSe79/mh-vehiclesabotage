@@ -5,44 +5,11 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local PlayerData = {}
 local peds = {}
 local blips = {}
-local vehicles = {}
 local isLoggedIn = false
 local displayBones = true
 local canRepair = true
 local random = nil
 local lastIndex = 0
-
---- Check if a vehicle exist.
----@param vehicle any
-local function DoesVehicleExist(vehicle)
-    local exist = false
-    for k, v in pairs(vehicles) do
-        if v == vehicle then
-            exist = true
-        end
-    end
-    return exist
-end
-
---- Add vehicle
----@param vehicle any
-local function AddVehicle(vehicle)
-    local exist = DoesVehicleExist(vehicle)
-    if not exist then
-        vehicles[#vehicles + 1] = vehicle
-        Entity(vehicle).state.line_empty = false
-    end
-end
-
---- Remove Vehicle
----@param vehicle any
-local function RemoveVehicle(vehicle)
-    for k, v in pairs(vehicles) do
-        if v == vehicle then
-            v = nil
-        end
-    end
-end
 
 --- To send a notifytation
 ---@param message string
@@ -522,10 +489,10 @@ RegisterNetEvent('mh-brakes:client:notify', function(message, type, length)
     Notify(message, type, length)
 end)
 
-RegisterNetEvent('mh-brakes:client:onjoin', function(shops, brakeLine)
-    Config.BrakeLine = brakeLine
-    CreateShopPeds(shops)
-    LoadBlips(shops)
+RegisterNetEvent('mh-brakes:client:onjoin', function(data)
+    Config.BrakeLine = data.brakeLine
+    CreateShopPeds(data.shops)
+    LoadBlips(data.shops)
 end)
 
 RegisterNetEvent('mh-brakes:client:showEffect', function(netid)
