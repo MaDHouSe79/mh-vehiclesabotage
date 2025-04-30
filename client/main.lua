@@ -278,11 +278,9 @@ local function Progressbar(title, item, timer, vehicle, bone, trigger, endMessag
         TriggerServerEvent(trigger, NetworkGetNetworkIdFromEntity(vehicle), bone)
         Notify(endMessage, "success", 5000)
         canRepair = true
-        displayBones = true
     end, function()
         ClearPedTasks(PlayerPedId())
         canRepair = true
-        displayBones = true
     end)
 end
 
@@ -294,7 +292,6 @@ local function CutBrakes(netid, bone)
     if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
         if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or
             IsThisModelABicycle(GetEntityModel(vehicle)) then
-            displayBones = false
             local isBrakelineAlreadyBroken = IsBrakelineAlreadyBroken(vehicle, bone)
             if isBrakelineAlreadyBroken then
                 return Notify(Lang:t('info.brakeline_is_already_broken'), "success", 5000)
@@ -306,7 +303,6 @@ local function CutBrakes(netid, bone)
                     else
                         ClearPedTasks(PlayerPedId())
                         canRepair = true
-                        displayBones = true
                     end
                 else
                     Progressbar(Lang:t('info.cutting_brakes'), Config.BrakeLine.Cut.item, Config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), Config.BrakeLine.Cut)
@@ -326,7 +322,6 @@ local function RepairBrakes(netid, bone)
     if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
         if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or
             IsThisModelABicycle(GetEntityModel(vehicle)) then
-            displayBones = false
             local isLineBroken = IsBrakelineAlreadyBroken(vehicle, bone)
             if not isLineBroken then
                 return Notify(Lang:t('info.line_not_broken'), "success", 5000)
@@ -347,7 +342,6 @@ local function RefillBrakeOil(netid, bone)
     if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
         if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or
             IsThisModelABicycle(GetEntityModel(vehicle)) then
-            displayBones = false
             local noDamage = NoLineDamage(vehicle)
             if not noDamage then
                 Notify(Lang:t('info.repair_the_brake_lines_first'), "error", 5000)
@@ -358,58 +352,6 @@ local function RefillBrakeOil(netid, bone)
             end
         else
             Notify(Lang:t('info.vehicle_has_no_brakes'), "error", 5000)
-        end
-    end
-end
-
---- Shows the damage bones
----@param vehicle entity
-local function ShowBones(vehicle)
-    if isLoggedIn and displayBones then
-        if Config.BrakeLine.Bones ~= nil then
-            local textOffset = 0.15
-            lastIndex = 0
-            local pressTxt, refillTxt = "", ""
-            local playerCoords = GetEntityCoords(PlayerPedId())
-            for wheelIndex, wheelBone in pairs(Config.BrakeLine.Bones) do
-                local wheelBoneIndex = GetEntityBoneIndexByName(vehicle, wheelBone)
-                if wheelBoneIndex ~= -1 then
-                    local wheels = {}
-                    local offset = GetWorldPositionOfEntityBone(vehicle, GetEntityBoneIndexByName(vehicle, wheelBone))
-                    local distance = #(vector3(playerCoords.x, playerCoords.y, playerCoords.z) - vector3(offset.x, offset.y, offset.z))
-                    if QBCore.Functions.HasItem(Config.BrakeLine.Repair.item, 1) then
-                        pressTxt = Lang:t('info.repair_brakeline')
-                    end
-                    if QBCore.Functions.HasItem(Config.BrakeLine.Oil.item, 1) then
-                        refillTxt = Lang:t("info.refuel_brake_oil")
-                    end
-                    if Entity(vehicle).state.wheel_lf and wheelBone == 'wheel_lf' then
-                        wheels[#wheels + 1] = { index = wheelIndex, bone = Lang:t('info.brakeline_is_brakeline'), color = "~r~" }
-                    end
-                    if Entity(vehicle).state.wheel_rf and wheelBone == 'wheel_rf' then
-                        wheels[#wheels + 1] = { index = wheelIndex, bone = Lang:t('info.brakeline_is_brakeline'), color = "~r~" }
-                    end
-                    if Entity(vehicle).state.wheel_lr and wheelBone == 'wheel_lr' then
-                        wheels[#wheels + 1] = { index = wheelIndex, bone = Lang:t('info.brakeline_is_brakeline'), color = "~r~" }
-                    end
-                    if Entity(vehicle).state.wheel_rr and wheelBone == 'wheel_rr' then
-                        wheels[#wheels + 1] = { index = wheelIndex, bone = Lang:t('info.brakeline_is_brakeline'), color = "~r~" }
-                    end
-                    if wheelBone == 'wheel_lr' or wheelBone == 'wheel_rr' then textOffset = 0.02 end
-                    if #wheels >= 1 then
-                        for k, wheel in pairs(wheels) do
-                            if distance < 1.5 then
-                                lastIndex = wheel.index
-                                if canRepair then
-                                    Draw3DText(offset.x, offset.y, offset.z + textOffset * wheel.index, pressTxt, 4, 0.06, 0.06)
-                                else
-                                    Draw3DText(offset.x, offset.y, offset.z + textOffset * wheel.index, wheel.color .. wheel.bone, 4, 0.06, 0.06)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
         end
     end
 end
@@ -426,7 +368,6 @@ end
 local function CheckLine(vehicle)
     local lineHasDamage = LineHasDamage(vehicle)
     if lineHasDamage or Entity(vehicle).state.line_empty then
-        ShowBones(vehicle)
         Notify(Lang:t("info.lines_has_damage"), "error", 5000)
     elseif not lineHasDamage and not Entity(vehicle).state.line_empty then
         Notify(Lang:t("info.lines_has_no_damage"), "error", 5000)

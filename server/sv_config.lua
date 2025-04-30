@@ -3,7 +3,7 @@
 --[[ ====================================================== ]] --
 SV_Config = {}
 
-SV_Config.Debug = true               -- Shows prints in the server console.
+SV_Config.Debug = false               -- Shows prints in the server console.
 SV_Config.AdminHasAccess = true      -- If true a admin has also access to use the needed items.
 SV_Config.UseAsJob = false           -- If true items can only be used when a player has the job, a admin can use it aswell.
 SV_Config.NeededJobType = 'mechanic' -- Job needed.

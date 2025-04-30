@@ -51,33 +51,6 @@
 - Add in server.cfg below `ensure [defaultmaps]` add `ensure [mh]`
 - Restart your server.
 
-# Server.cfg Example
-```conf
-# QBCore & Extra stuff
-ensure qb-core
-ensure mh-cashasitem # if you use mh-cashasitem
-ensure mh-brakes # add here if you use mh-brakes
-ensure [qb]
-ensure [standalone]
-ensure [voice]
-ensure [defaultmaps]
-ensure [mh] # add here.
-```
-
-# SQL Database
-```sql
-CREATE TABLE IF NOT EXISTS `mh_brakes` (
-    `id` int(10) NOT NULL AUTO_INCREMENT,
-    `plate` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `wheel_lf` int(10) NOT NULL DEFAULT 0,
-    `wheel_rf` int(10) NOT NULL DEFAULT 0,
-    `wheel_lr` int(10) NOT NULL DEFAULT 0,
-    `wheel_rr` int(10) NOT NULL DEFAULT 0,
-    `oil_empty` int(10) NOT NULL DEFAULT 0,
-    PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;    
-```
-
 # QB Shared items
 ```lua
 brake_cutter                 = { name = 'brake_cutter', label = 'Brake Cutter', weight = 500, type = 'item', image = 'brake_cutter.png', unique = false, useable = true, shouldClose = true, description = 'A Brake Cutter to cut brake lines' },
@@ -86,7 +59,7 @@ brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight
 ```
 
 # Replace code in `qb-core` (client side)
-- in `qb-core/client/functions.lua` around line 364
+- in `qb-core/client/functions.lua` around line 396
 ```lua
 function QBCore.Functions.DeleteVehicle(vehicle)
     SetEntityAsMissionEntity(vehicle, true, true)
@@ -102,7 +75,6 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
     local itemInfo = data.item
     local amount = data.amount
     local shop = string.gsub(data.shop, 'shop%-', '')
-    local price = itemInfo.price * amount
     local Player = QBCore.Functions.GetPlayer(source)
 
     if not Player then
@@ -126,11 +98,24 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         end
     end
 
+    if shopInfo.items[itemInfo.slot].name ~= itemInfo.name then -- Check if item name passed is the same as the item in that slot
+        cb(false)
+        return
+    end
+
+    if amount > shopInfo.items[itemInfo.slot].amount then
+        TriggerClientEvent('QBCore:Notify', source, 'Cannot purchase larger quantity than currently in stock', 'error')
+        cb(false)
+        return
+    end
+
     if not CanAddItem(source, itemInfo.name, amount) then
         TriggerClientEvent('QBCore:Notify', source, 'Cannot hold item', 'error')
         cb(false)
         return
     end
+
+    local price = shopInfo.items[itemInfo.slot].price * amount
 
     if itemInfo.name == 'brake_cutter' then
         TriggerEvent('mh-brakes:server:giveitem', source, 'brake_cutter', amount, price)
@@ -148,7 +133,8 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
 end)
 ```
 
-
+# Add code for `qb-radialmenu`
+- in `qb-radialmenu/client/main.lua` around line 107
 ```lua
 VehicleMenu.items[#VehicleMenu.items + 1] = {
     id = 'check_brakeline',
@@ -159,6 +145,8 @@ VehicleMenu.items[#VehicleMenu.items + 1] = {
     shouldClose = true
 }
 ```
+
+
 # LICENSE
 [GPL LICENSE](./LICENSE)<br />
 &copy; [MaDHouSe79](https://www.youtube.com/@MaDHouSe79)

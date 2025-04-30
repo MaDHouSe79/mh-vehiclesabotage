@@ -428,7 +428,6 @@ QBCore.Functions.CreateUseableItem(SV_Config.BrakeLine.Oil.item, function(source
 end)
 
 CreateThread(function()
-    Wait(5100)
     MySQL.Async.execute([[
         CREATE TABLE IF NOT EXISTS `mh_brakes` (
             `id` int(10) NOT NULL AUTO_INCREMENT,
