@@ -423,26 +423,6 @@ local function GetVehicleInFrontOfPlayer(ped)
     return nil
 end
 
---- Show brake oil refill txt
----@param vehicle entity
-local function ShowBrakeOilRefillTxt(vehicle)
-    if isLoggedIn and displayBones then
-        local lineHasDamage = LineHasDamage(vehicle)
-        if lineHasDamage then canRepair = false end
-        local playerCoords = GetEntityCoords(PlayerPedId())
-        local textOffset = 0.15
-        local lines = {'wheel_lf', 'wheel_rf', 'wheel_lr', 'wheel_rr'}
-        if random == nil then random = lines[math.random(1, #lines)] end
-        local refillTxt = ""
-        if canRepair and not lineHasDamage then
-            if QBCore.Functions.HasItem("brake_oil", 1) then refillTxt = Lang:t("info.refuel_brake_oil") end
-            local offset = GetWorldPositionOfEntityBone(vehicle, GetEntityBoneIndexByName(vehicle, random))
-            local distance = #(vector3(playerCoords.x, playerCoords.y, playerCoords.z) - vector3(offset.x, offset.y, offset.z))
-            if distance < 1.5 then Draw3DText(offset.x, offset.y, offset.z + textOffset * lastIndex, "~o~" .. refillTxt, 4, 0.06, 0.06) end
-        end
-    end
-end
-
 local function CheckLine(vehicle)
     local lineHasDamage = LineHasDamage(vehicle)
     if lineHasDamage or Entity(vehicle).state.line_empty then
@@ -454,7 +434,6 @@ local function CheckLine(vehicle)
 end
 
 local function LossControl(vehicle)
-    print("LossControl")
     SetBrakeForce(vehicle, 0.0)
     SetVehicleReduceGrip(vehicle, true)
     Wait(math.random(1, 3) * 1000)
@@ -580,7 +559,6 @@ CreateThread(function()
                     for k, v in pairs(hasLeaked) do
                         if v.status and v.coords ~= nil then
                             local distance = GetDistance(v.coords, vehicleCoords)
-                            print(distance)
                             if distance <= 5.0 then LossControl(vehicle) end
                         end
                     end
