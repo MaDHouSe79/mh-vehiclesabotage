@@ -15,8 +15,8 @@ local countBraking = 0
 local maxBeforeBrakeCount = math.random(5, 10)
 local disableControll = false
 
-local function UseSkillBar()
-    return exports["qb-minigames"]:Skillbar(config.SkillBarType, config.SkillBarKeys)
+local function UseSkillBar(type, keys)
+    return exports["qb-minigames"]:Skillbar(type, keys)
 end
 
 --- To send a notifytation
@@ -297,18 +297,16 @@ end
 ---@param endMessage string
 ---@param animData table
 local function DoJob(title, item, timer, vehicle, bone, trigger, endMessage, animData)
-    disableControll = true
-    FreezeEntityPosition(PlayerPedId(), true)
     LoadAnimDict(animData.animation.dict)
+    disableControll = true
     TaskPlayAnim(PlayerPedId(), animData.animation.dict, animData.animation.name, 3.0, 3.0, -1, animData.animation.flag or 1, 0, false, false, false)
     Wait(timer)
-    FreezeEntityPosition(PlayerPedId(), false)
+    disableControll = false
     ClearPedTasks(PlayerPedId())
+    canRepair = true
     TriggerServerEvent('mh-vehiclesabotage:server:removeItem', item)
     TriggerServerEvent(trigger, NetworkGetNetworkIdFromEntity(vehicle), bone)
     Notify(endMessage, "success", 5000)
-    canRepair = true
-    disableControll = false
 end
 
 --- Cut brake line
@@ -317,21 +315,15 @@ end
 local function CutBrakes(netid, bone)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
-        if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or
-            IsThisModelABicycle(GetEntityModel(vehicle)) then
+        if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or IsThisModelABicycle(GetEntityModel(vehicle)) then
             local isBrakelineAlreadyBroken = IsBrakelineAlreadyBroken(vehicle, bone)
             if isBrakelineAlreadyBroken then
-                return Notify(Lang:t('info.brakeline_is_already_broken'), "success", 5000)
+                Notify(Lang:t('info.brakeline_is_already_broken'), "success", 5000)
+                disableControll = false
+                FreezeEntityPosition(PlayerPedId(), false)
             elseif not isBrakelineAlreadyBroken then
-                if config.UseMiniGame then
-                    local success = UseSkillBar()
-                    if success then
-                        DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
-                    else
-                        ClearPedTasks(PlayerPedId())
-                        canRepair = true
-                    end
-                else
+                local success = UseSkillBar('easy', 'wad')
+                if success then
                     DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
                 end
             end
@@ -417,18 +409,24 @@ local function OnJoin()
             config = data.config
             PlayerData = QBCore.Functions.GetPlayerData()
             isLoggedIn = true
+            disableControll = false
             CreateShopPeds()
             LoadBlips()
         end
     end)
 end
+local function OnPart()
+    PlayerData = {}
+    isLoggedIn = false
+    disableControll = false
+    DeletePeds()
+    DeleteBlips()
+end
+
 
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
-        PlayerData = {}
-        isLoggedIn = false
-        DeletePeds()
-        DeleteBlips()
+        OnPart()
     end
 end)
 
@@ -468,9 +466,9 @@ end)
 RegisterNetEvent('mh-vehiclesabotage:client:UseItem', function(item)
     local vehicle, distance = GetClosestVehicle()
     if vehicle > 0 and distance <= 2.5 then
+        local wheel, bone = GetClosestWheel(vehicle)
         TaskTurnPedToFaceEntity(PlayerPedId(), vehicle, 5000)
         Wait(1000)
-        local wheel, bone = GetClosestWheel(vehicle)
         if wheel ~= nil then
             if item == config.BrakeLine.Cut.item then
                 CutBrakes(NetworkGetNetworkIdFromEntity(vehicle), bone)
@@ -538,6 +536,7 @@ end)
 CreateThread(function()
     while true do
         local sleep = 1000
+        PlayerData = QBCore.Functions.GetPlayerData()
         if isLoggedIn and disableControll and not PlayerData.metadata['isdead'] then
             sleep = 5
             if IsPauseMenuActive() then SetFrontendActive(false) end
