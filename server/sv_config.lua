@@ -8,6 +8,14 @@ SV_Config.AdminHasAccess = true      -- If true a admin has also access to use t
 SV_Config.UseAsJob = false           -- If true items can only be used when a player has the job, a admin can use it aswell.
 SV_Config.NeededJobType = 'mechanic' -- Job needed.
 SV_Config.UseOilMarker = true        -- If true when a line is cutted it left a oil mark on t he ground.
+SV_Config.MoneyType = 'cash'         -- You can use cash, bank, or if you use mh-cashasitem you can use black_money aswell.
+SV_Config.NotifyScript = "k5_notify" -- you can use (qb, k5_notify, okokNotify, Roda_Notifications)
+SV_Config.InteractButton = 38        -- E, if you want to change this see: https://docs.fivem.net/docs/game-references/controls/
+SV_Config.InteractText = "E"         -- 38, if you want to change this see: https://docs.fivem.net/docs/game-references/controls/
+SV_Config.UseMiniGame = false
+SV_Config.SkillBarType = 'medium'    -- Use easy, medium, hard.
+SV_Config.SkillBarKeys = 'wad'       -- Default 1234 or wad.
+SV_Config.UseInventory = false
 
 SV_Config.Items = {
     --  Default Items do not change the items below this

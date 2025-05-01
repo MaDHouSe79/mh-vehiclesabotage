@@ -5,6 +5,6 @@ author 'MaDHouSe'
 description 'MH Brakes - Sabotage vehicle brakelines.'
 version '1.0.0'
 
-shared_scripts {'@ox_lib/init.lua', 'locales/locale.lua', 'locales/en.lua', 'locales/*.lua', 'config.lua'}
+shared_scripts {'@ox_lib/init.lua', 'locales/locale.lua', 'locales/en.lua', 'locales/*.lua'}
 client_scripts {'client/main.lua'}
 server_scripts {'@oxmysql/lib/MySQL.lua', 'server/sv_config.lua', 'server/main.lua', 'server/update.lua'}

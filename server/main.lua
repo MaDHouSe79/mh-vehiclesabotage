@@ -48,9 +48,7 @@ end
 ---@param src number
 ---@param item string
 local function RequiredItems(src, item)
-    local items = {
-        { name = item, image = QBCore.Shared.Items[item].image }
-    }
+    local items = { { name = item, image = QBCore.Shared.Items[item].image } }
     TriggerClientEvent('qb-inventory:client:requiredItems', src, items, true)
     Wait(5000)
     TriggerClientEvent('qb-inventory:client:requiredItems', src, items, false)
@@ -116,21 +114,6 @@ local function AddVehicle(vehicle)
         Entity(vehicle).state.wheel_rf = false
         Entity(vehicle).state.wheel_lr = false
         Entity(vehicle).state.wheel_rr = false
-    end
-end
-
---- Remove vehicle from list
----@param vehicle entity
-local function RemoveVehicle(vehicle)
-    for _, v in pairs(vehicles) do
-        if v == vehicle then
-            Entity(vehicle).state.line_empty = nil
-            Entity(vehicle).state.wheel_lf = nil
-            Entity(vehicle).state.wheel_rf = nil
-            Entity(vehicle).state.wheel_lr = nil
-            Entity(vehicle).state.wheel_rr = nil
-            v = nil
-        end
     end
 end
 
@@ -334,9 +317,8 @@ RegisterNetEvent('mh-brakes:server:giveitem', function(source, item, amount, pri
     end
 end)
 
-RegisterServerEvent("mh-brakes:server:onjoin", function()
-    local src = source
-    TriggerClientEvent('mh-brakes:client:onjoin', src, {shops = SV_Config.Shops, brakeLine = SV_Config.BrakeLine})
+QBCore.Functions.CreateCallback("mh-brakes:server:OnJoin", function(source, cb)
+    cb({status = true, config = SV_Config})
 end)
 
 RegisterServerEvent("mh-brakes:server:syncDestroy", function(netid, bone)

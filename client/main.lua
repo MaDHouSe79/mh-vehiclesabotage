@@ -11,6 +11,12 @@ local displayBones = true
 local canRepair = true
 local random = nil
 local lastIndex = 0
+local countBraking = 0
+local maxBeforeBrakeCount = math.random(5, 10)
+
+local function UseSkillBar()
+    return exports["qb-minigames"]:Skillbar(config.SkillBarType, config.SkillBarKeys)
+end
 
 --- To send a notifytation
 ---@param message string
@@ -24,33 +30,6 @@ local function Notify(message, type, length)
     end
 end
 
---- To draw 3d text On screen
----@param x number
----@param y number
----@param z number
----@param txt string
----@param font number
----@param scale number
----@param num number
-local function Draw3DText(x, y, z, txt, font, scale, num)
-    local _x, _y, _z = table.unpack(GetGameplayCamCoords())
-    local distance = 1 / GetDistanceBetweenCoords(_x, _y, _z, x, y, z, true) * 20
-    local value = distance * 1 / GetGameplayCamFov() * 100
-    SetTextScale(scale * value, num * value)
-    SetTextFont(font)
-    SetTextProportional(1)
-    SetTextDropshadow(1, 1, 1, 1, 255)
-    SetTextEdge(2, 0, 0, 0, 150)
-    SetTextDropShadow()
-    SetTextOutline()
-    SetTextEntry("STRING")
-    SetTextCentre(1)
-    AddTextComponentString(txt)
-    SetDrawOrigin(x, y, z, 0)
-    DrawText(0.0, 0.0)
-    ClearDrawOrigin()
-end
-
 --- Set Brake Force
 ---@param vehicle any
 ---@param force number
@@ -62,15 +41,6 @@ end
 ---@param vehicle any
 local function GetBrakeForce(vehicle)
     return GetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce")
-end
-
---- Display ther required items
----@param item string
-local function RequiredItems(item)
-    local items = {{name = item, image = QBCore.Shared.Items[item].image}}
-    TriggerEvent('qb-inventory:client:requiredItems', items, true)
-    Wait(5000)
-    TriggerEvent('qb-inventory:client:requiredItems', items, false)
 end
 
 local function GetDistance(pos1, pos2)
@@ -112,8 +82,8 @@ end
 
 --- Load blips
 ---@param shops table
-local function LoadBlips(shops)
-    for k, shop in pairs(shops) do
+local function LoadBlips()
+    for k, shop in pairs(config.Shops) do
         if shop.blip.enable then
             local blip = AddBlipForCoord(shop.ped.coords)
             SetBlipSprite(blip, shop.blip.sprite)
@@ -128,10 +98,47 @@ local function LoadBlips(shops)
     end
 end
 
+local function ShopMenu()
+    if config.MenuScript == "ox_lib" then
+        local options = {}
+        local num = 1
+        for k, v in pairs(config.Items) do
+            local image = config.ImagesBaseFolder .. v.item .. ".png"
+            options[#options + 1] = {
+                id = num,
+                icon = image,
+                title = v.label,
+                description = 'Price: $'..v.price,
+                arrow = false,
+                onSelect = function()
+                    TriggerServerEvent('mh-brakes:server:giveitem', {item = v.item, price = v.price})
+                end
+            }
+            num = num + 1
+        end
+        options[#options + 1] = {id = num,title = Lang:t('info.close'), icon = "fa-solid fa-stop", description = '', arrow = false, onSelect = function() end}
+        table.sort(options, function(a, b) return a.id < b.id end)
+        lib.registerContext({id = 'menu', title = "Tools Shop", icon = "fa-solid fa-car", options = options})
+        lib.showContext('menu')
+    elseif config.MenuScript == "qb-menu" then
+        local options = {{header = "Tools Shop", isMenuHeader = true}}
+        for k, v in pairs(config.Items) do
+            local image = config.ImagesBaseFolder .. v.item .. ".png"
+            local description = 'Item: '..v.label..'<br />Price: $'..v.price..'<br />Amount: '..v.amount
+            options[#options + 1] = {
+                header = "", txt = '<table><td style="text-align:left; height: 50px; padding: 5px;"><img src="'..image..'" style="width:80px;"></td><td style="text-align:top; height: 50px; padding: 15px;">'..description..'</td></table>',
+                params = {event = 'mh-brakes:server:giveitem', data = {item = v.item, price = v.price}}
+            }
+        end
+        options[#options + 1] = {header = Lang:t('info.close'), txt = '', params = {event = 'qb-menu:client:closeMenu'}}
+        exports['qb-menu']:openMenu(options)
+    end
+end
+
 --- Create Shop Peds
 ---@param shops table
-local function CreateShopPeds(shops)
-    for id, shop in pairs(shops) do
+local function CreateShopPeds()
+    for id, shop in pairs(config.Shops) do
         if shop.enable then
             LoadModel(shop.ped.model)
             local ped = CreatePed(0, shop.ped.model, shop.ped.coords.x, shop.ped.coords.y, shop.ped.coords.z - 1, shop.ped.coords.w, false, false)
@@ -148,7 +155,11 @@ local function CreateShopPeds(shops)
                     label = Lang:t('info.open_shop'),
                     icon = 'fa-solid fa-hotel',
                     action = function()
-                        TriggerServerEvent('mh-brakes:server:openShop', shop.id)
+                        if config.UseInventory then
+                            TriggerServerEvent('mh-brakes:server:openShop', shop.id)
+                        else
+                            ShopMenu()
+                        end
                     end,
                     canInteract = function(entity, distance, data)
                         return true
@@ -184,7 +195,7 @@ local function GetClosestWheel(vehicle)
     local closestWheelBone = nil
     if isLoggedIn then
         local playerCoords = GetEntityCoords(PlayerPedId())
-        for wheelIndex, wheelBone in pairs(Config.BrakeLine.Bones) do
+        for wheelIndex, wheelBone in pairs(config.BrakeLine.Bones) do
             local wheelBoneIndex = GetEntityBoneIndexByName(vehicle, wheelBone)
             if wheelBoneIndex ~= -1 then
                 local wheelPos = GetWorldPositionOfEntityBone(vehicle, wheelBoneIndex)
@@ -296,16 +307,16 @@ local function CutBrakes(netid, bone)
             if isBrakelineAlreadyBroken then
                 return Notify(Lang:t('info.brakeline_is_already_broken'), "success", 5000)
             elseif not isBrakelineAlreadyBroken then
-                if Config.UseMiniGame then
+                if config.UseMiniGame then
                     local success = UseSkillBar()
                     if success then
-                        Progressbar(Lang:t('info.cutting_brakes'), Config.BrakeLine.Cut.item, Config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), Config.BrakeLine.Cut)
+                        Progressbar(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
                     else
                         ClearPedTasks(PlayerPedId())
                         canRepair = true
                     end
                 else
-                    Progressbar(Lang:t('info.cutting_brakes'), Config.BrakeLine.Cut.item, Config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), Config.BrakeLine.Cut)
+                    Progressbar(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
                 end
             end
         else
@@ -326,7 +337,7 @@ local function RepairBrakes(netid, bone)
             if not isLineBroken then
                 return Notify(Lang:t('info.line_not_broken'), "success", 5000)
             elseif isLineBroken then
-                Progressbar(Lang:t('info.repairing_brakes'), Config.BrakeLine.Repair.item, Config.BrakeLine.Repair.timer, vehicle, bone, 'mh-brakes:server:syncRepair', Lang:t('info.brakes_has_been_repaired'), Config.BrakeLine.Repair)
+                Progressbar(Lang:t('info.repairing_brakes'), config.BrakeLine.Repair.item, config.BrakeLine.Repair.timer, vehicle, bone, 'mh-brakes:server:syncRepair', Lang:t('info.brakes_has_been_repaired'), config.BrakeLine.Repair)
             end
         else
             Notify(Lang:t('info.vehicle_has_no_brakes'), "error", 5000)
@@ -347,7 +358,7 @@ local function RefillBrakeOil(netid, bone)
                 Notify(Lang:t('info.repair_the_brake_lines_first'), "error", 5000)
             elseif noDamage then
                 SetVehicleDoorOpen(vehicle, 4, false, true)
-                Progressbar(Lang:t('info.refuel_brake_oil'), Config.BrakeLine.Oil.item, Config.BrakeLine.Oil.timer, vehicle, bone, 'mh-brakes:server:syncFixed', Lang:t('info.brakes_oil_has_refilled'), Config.BrakeLine.Oil)
+                Progressbar(Lang:t('info.refuel_brake_oil'), config.BrakeLine.Oil.item, config.BrakeLine.Oil.timer, vehicle, bone, 'mh-brakes:server:syncFixed', Lang:t('info.brakes_oil_has_refilled'), config.BrakeLine.Oil)
                 if hasLeaked[netid] then hasLeaked[netid].status = false end
             end
         else
@@ -384,6 +395,18 @@ local function LossControl(vehicle)
     SetBrakeForce(vehicle, 1.0)
 end
 
+local function OnJoin()
+    QBCore.Functions.TriggerCallback("mh-brakes:server:OnJoin", function(data)
+        if data.status then
+            config = data.config
+            PlayerData = QBCore.Functions.GetPlayerData()
+            isLoggedIn = true
+            CreateShopPeds()
+            LoadBlips()
+        end
+    end)
+end
+
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
         PlayerData = {}
@@ -394,17 +417,11 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 AddEventHandler('onResourceStart', function(resource)
-    if resource == GetCurrentResourceName() then
-        PlayerData = QBCore.Functions.GetPlayerData()
-        isLoggedIn = true
-        TriggerServerEvent('mh-brakes:server:onjoin')
-    end
+    if resource == GetCurrentResourceName() then OnJoin() end
 end)
 
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
-    PlayerData = QBCore.Functions.GetPlayerData()
-    isLoggedIn = true
-    TriggerServerEvent('mh-brakes:server:onjoin')
+    OnJoin()
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
@@ -416,12 +433,6 @@ end)
 
 RegisterNetEvent('mh-brakes:client:notify', function(message, type, length)
     Notify(message, type, length)
-end)
-
-RegisterNetEvent('mh-brakes:client:onjoin', function(data)
-    Config.BrakeLine = data.brakeLine
-    CreateShopPeds(data.shops)
-    LoadBlips(data.shops)
 end)
 
 RegisterNetEvent('mh-brakes:client:showEffect', function(netid)
@@ -445,11 +456,11 @@ RegisterNetEvent('mh-brakes:client:UseItem', function(item)
         Wait(1000)
         local wheel, bone = GetClosestWheel(vehicle)
         if wheel ~= nil then
-            if item == Config.BrakeLine.Cut.item then
+            if item == config.BrakeLine.Cut.item then
                 CutBrakes(NetworkGetNetworkIdFromEntity(vehicle), bone)
-            elseif item == Config.BrakeLine.Repair.item then
+            elseif item == config.BrakeLine.Repair.item then
                 RepairBrakes(NetworkGetNetworkIdFromEntity(vehicle), bone)
-            elseif item == Config.BrakeLine.Oil.item then
+            elseif item == config.BrakeLine.Oil.item then
                 RefillBrakeOil(NetworkGetNetworkIdFromEntity(vehicle), bone)
             end
         else
@@ -460,8 +471,6 @@ RegisterNetEvent('mh-brakes:client:UseItem', function(item)
     end
 end)
 
-local countBraking = 0
-local maxBeforeBrakeCount = math.random(5, 10)
 CreateThread(function()
     while true do
         if isLoggedIn then
