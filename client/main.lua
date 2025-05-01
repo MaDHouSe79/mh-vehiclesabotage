@@ -13,6 +13,8 @@ local random = nil
 local lastIndex = 0
 local countBraking = 0
 local maxBeforeBrakeCount = math.random(5, 10)
+local disableControll = false
+
 
 local function UseSkillBar()
     return exports["qb-minigames"]:Skillbar(config.SkillBarType, config.SkillBarKeys)
@@ -60,6 +62,13 @@ local function LoadModel(model)
     end
 end
 
+local function LoadAnimDict(dict)
+    RequestAnimDict(dict)
+    while not HasAnimDictLoaded(dict) do
+        Wait(5)
+    end
+end
+
 --- Delete all blips from the map
 local function DeleteBlips()
     for k, blip in pairs(blips) do
@@ -103,7 +112,7 @@ local function ShopMenu()
         local options = {}
         local num = 1
         for k, v in pairs(config.Items) do
-            local image = config.ImagesBaseFolder .. v.item .. ".png"
+            local image = config.ImagesBaseFolder .. v.name .. ".png"
             options[#options + 1] = {
                 id = num,
                 icon = image,
@@ -111,7 +120,10 @@ local function ShopMenu()
                 description = 'Price: $'..v.price,
                 arrow = false,
                 onSelect = function()
-                    TriggerServerEvent('mh-brakes:server:giveitem', {item = v.item, price = v.price})
+                    local input = lib.inputDialog("amount_to_buy", {{type = 'number', label = "amount_to_buy", description = "enter the amount of items you want to buy", required = true, icon = 'hashtag'}})
+                    if not input then return ShopMenu() end
+                    TriggerServerEvent('mh-brakes:server:giveitem', {src = PlayerData.source, name = v.name, price = v.price, amount = tonumber(input[1])})
+                    ShopMenu()
                 end
             }
             num = num + 1
@@ -123,11 +135,11 @@ local function ShopMenu()
     elseif config.MenuScript == "qb-menu" then
         local options = {{header = "Tools Shop", isMenuHeader = true}}
         for k, v in pairs(config.Items) do
-            local image = config.ImagesBaseFolder .. v.item .. ".png"
+            local image = config.ImagesBaseFolder .. v.name .. ".png"
             local description = 'Item: '..v.label..'<br />Price: $'..v.price..'<br />Amount: '..v.amount
             options[#options + 1] = {
                 header = "", txt = '<table><td style="text-align:left; height: 50px; padding: 5px;"><img src="'..image..'" style="width:80px;"></td><td style="text-align:top; height: 50px; padding: 15px;">'..description..'</td></table>',
-                params = {event = 'mh-brakes:server:giveitem', data = {item = v.item, price = v.price}}
+                params = {event = 'mh-brakes:server:giveitem', data = {src = PlayerData.source, name = v.name, price = v.price, amount = 1}}
             }
         end
         options[#options + 1] = {header = Lang:t('info.close'), txt = '', params = {event = 'qb-menu:client:closeMenu'}}
@@ -150,23 +162,35 @@ local function CreateShopPeds()
             SetPedRandomComponentVariation(ped, 0)
             SetPedRandomProps(ped)
             peds[#peds + 1] = ped
-            exports['qb-target']:AddTargetEntity(ped, {
-                options = {{
-                    label = Lang:t('info.open_shop'),
-                    icon = 'fa-solid fa-hotel',
-                    action = function()
-                        if config.UseInventory then
-                            TriggerServerEvent('mh-brakes:server:openShop', shop.id)
-                        else
+            if GetResourceState("qb-target") ~= 'missing' then
+                exports['qb-target']:AddTargetEntity(ped, {
+                    options = {{
+                        label = Lang:t('info.open_shop'),
+                        icon = 'fa-solid fa-hotel',
+                        action = function()
                             ShopMenu()
+                        end,
+                        canInteract = function(entity, distance, data)
+                            return true
                         end
-                    end,
-                    canInteract = function(entity, distance, data)
-                        return true
-                    end
-                }},
-                distance = 2.0
-            })
+                    }},
+                    distance = 2.0
+                })
+            elseif GetResourceState("ox_target") ~= 'missing' then
+                exports.ox_target:addEntity(ped, {
+                    {
+                        label = Lang:t('info.open_shop'),
+                        icon = 'fa-solid fa-hotel',
+                        onSelect = function(data)
+                            ShopMenu()
+                        end,
+                        canInteract = function(data)
+                            return true
+                        end,
+                        distance = 2.0
+                    },
+                })
+            end
         end
     end
 end
@@ -264,7 +288,7 @@ local function IsBrakelineAlreadyBroken(vehicle, bone)
     return false
 end
 
---- Progressbar
+--- DoJob
 ---@param title string
 ---@param item string
 ---@param timer number
@@ -273,26 +297,19 @@ end
 ---@param trigger string
 ---@param endMessage string
 ---@param animData table
-local function Progressbar(title, item, timer, vehicle, bone, trigger, endMessage, animData)
-    QBCore.Functions.Progressbar('mh_brakes', title, timer, false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableMouse = false,
-        disableCombat = true
-    }, {
-        animDict = animData.animation.dict,
-        anim = animData.animation.name,
-        flags = animData.animation.flag
-    }, {}, {}, function()
-        ClearPedTasks(PlayerPedId())
-        TriggerServerEvent('mh-brakes:server:removeItem', item)
-        TriggerServerEvent(trigger, NetworkGetNetworkIdFromEntity(vehicle), bone)
-        Notify(endMessage, "success", 5000)
-        canRepair = true
-    end, function()
-        ClearPedTasks(PlayerPedId())
-        canRepair = true
-    end)
+local function DoJob(title, item, timer, vehicle, bone, trigger, endMessage, animData)
+    disableControll = true
+    FreezeEntityPosition(PlayerPedId(), true)
+    LoadAnimDict(animData.animation.dict)
+    TaskPlayAnim(PlayerPedId(), animData.animation.dict, animData.animation.name, 3.0, 3.0, -1, animData.animation.flag or 1, 0, false, false, false)
+    Wait(timer)
+    FreezeEntityPosition(PlayerPedId(), false)
+    ClearPedTasks(PlayerPedId())
+    TriggerServerEvent('mh-brakes:server:removeItem', item)
+    TriggerServerEvent(trigger, NetworkGetNetworkIdFromEntity(vehicle), bone)
+    Notify(endMessage, "success", 5000)
+    canRepair = true
+    disableControll = false
 end
 
 --- Cut brake line
@@ -310,13 +327,13 @@ local function CutBrakes(netid, bone)
                 if config.UseMiniGame then
                     local success = UseSkillBar()
                     if success then
-                        Progressbar(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
+                        DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
                     else
                         ClearPedTasks(PlayerPedId())
                         canRepair = true
                     end
                 else
-                    Progressbar(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
+                    DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
                 end
             end
         else
@@ -337,7 +354,7 @@ local function RepairBrakes(netid, bone)
             if not isLineBroken then
                 return Notify(Lang:t('info.line_not_broken'), "success", 5000)
             elseif isLineBroken then
-                Progressbar(Lang:t('info.repairing_brakes'), config.BrakeLine.Repair.item, config.BrakeLine.Repair.timer, vehicle, bone, 'mh-brakes:server:syncRepair', Lang:t('info.brakes_has_been_repaired'), config.BrakeLine.Repair)
+                DoJob(Lang:t('info.repairing_brakes'), config.BrakeLine.Repair.item, config.BrakeLine.Repair.timer, vehicle, bone, 'mh-brakes:server:syncRepair', Lang:t('info.brakes_has_been_repaired'), config.BrakeLine.Repair)
             end
         else
             Notify(Lang:t('info.vehicle_has_no_brakes'), "error", 5000)
@@ -358,7 +375,7 @@ local function RefillBrakeOil(netid, bone)
                 Notify(Lang:t('info.repair_the_brake_lines_first'), "error", 5000)
             elseif noDamage then
                 SetVehicleDoorOpen(vehicle, 4, false, true)
-                Progressbar(Lang:t('info.refuel_brake_oil'), config.BrakeLine.Oil.item, config.BrakeLine.Oil.timer, vehicle, bone, 'mh-brakes:server:syncFixed', Lang:t('info.brakes_oil_has_refilled'), config.BrakeLine.Oil)
+                DoJob(Lang:t('info.refuel_brake_oil'), config.BrakeLine.Oil.item, config.BrakeLine.Oil.timer, vehicle, bone, 'mh-brakes:server:syncFixed', Lang:t('info.brakes_oil_has_refilled'), config.BrakeLine.Oil)
                 if hasLeaked[netid] then hasLeaked[netid].status = false end
             end
         else
@@ -516,5 +533,28 @@ CreateThread(function()
             end
         end
         Wait(0)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        local sleep = 1000
+        if isLoggedIn and disableControll and not PlayerData.metadata['isdead'] then
+            sleep = 5
+            if IsPauseMenuActive() then SetFrontendActive(false) end
+            DisableAllControlActions(0)
+            EnableControlAction(0, 1, true)
+            EnableControlAction(0, 2, true)
+            EnableControlAction(0, 245, true)
+            EnableControlAction(0, 38, true)
+            EnableControlAction(0, 0, true)
+            EnableControlAction(0, 322, true)
+            EnableControlAction(0, 288, true)
+            EnableControlAction(0, 213, true)
+            EnableControlAction(0, 249, true)
+            EnableControlAction(0, 46, true)
+            EnableControlAction(0, 47, true)
+        end
+        Wait(sleep)
     end
 end)

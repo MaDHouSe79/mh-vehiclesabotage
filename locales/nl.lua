@@ -20,6 +20,7 @@ local Translations = {
         ['line_not_broken'] = "Deze remleiding is niet kapot.",
         ['brakeline_is_brakeline'] = "Remleiding is gebroken",
         ['repair_brakeline'] = "Repareer Remleiding",
+        ['close'] = "Close",
     },
 }
 

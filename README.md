@@ -34,9 +34,10 @@
 
 # Dependencies
 - [oxmysql](https://github.com/overextended/oxmysql/releases/tag/v1.9.3)
+- [progressbar](https://github.com/qbcore-framework/qb-core/progressbar)
 - [qb-core](https://github.com/qbcore-framework/qb-core)
 - [qb-inventory](https://github.com/qbcore-framework/qb-core/qb-inventory) (2.0)
-- [progressbar](https://github.com/qbcore-framework/qb-core/progressbar)
+- [qb-target](https://github.com/qbcore-framework/qb-target) or [ox_target](https://github.com/overextended/ox_target/releases)
 - [qb-minigames](https://github.com/qbcore-framework/qb-core/qb-minigames)
 
 # Inventory Images
@@ -68,71 +69,6 @@ function QBCore.Functions.DeleteVehicle(vehicle)
 end
 ```
 
-# Replace code `qb-inventory` (Server side)
-- in `qb-inventory/server/main.lua` around line 329
-```lua
-QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(source, cb, data)
-    local itemInfo = data.item
-    local amount = data.amount
-    local shop = string.gsub(data.shop, 'shop%-', '')
-    local Player = QBCore.Functions.GetPlayer(source)
-
-    if not Player then
-        cb(false)
-        return
-    end
-
-    local shopInfo = RegisteredShops[shop]
-    if not shopInfo then
-        cb(false)
-        return
-    end
-
-    local playerPed = GetPlayerPed(source)
-    local playerCoords = GetEntityCoords(playerPed)
-    if shopInfo.coords then
-        local shopCoords = vector3(shopInfo.coords.x, shopInfo.coords.y, shopInfo.coords.z)
-        if #(playerCoords - shopCoords) > 10 then
-            cb(false)
-            return
-        end
-    end
-
-    if shopInfo.items[itemInfo.slot].name ~= itemInfo.name then -- Check if item name passed is the same as the item in that slot
-        cb(false)
-        return
-    end
-
-    if amount > shopInfo.items[itemInfo.slot].amount then
-        TriggerClientEvent('QBCore:Notify', source, 'Cannot purchase larger quantity than currently in stock', 'error')
-        cb(false)
-        return
-    end
-
-    if not CanAddItem(source, itemInfo.name, amount) then
-        TriggerClientEvent('QBCore:Notify', source, 'Cannot hold item', 'error')
-        cb(false)
-        return
-    end
-
-    local price = shopInfo.items[itemInfo.slot].price * amount
-
-    if itemInfo.name == 'brake_cutter' then
-        TriggerEvent('mh-brakes:server:giveitem', source, 'brake_cutter', amount, price)
-    else
-        if Player.PlayerData.money.cash >= price then
-            Player.Functions.RemoveMoney('cash', price, 'shop-purchase')
-            AddItem(source, itemInfo.name, amount, nil, itemInfo.info, 'shop-purchase')
-            TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
-            cb(true)
-        else
-            TriggerClientEvent('QBCore:Notify', source, 'You do not have enough money', 'error')
-            cb(false)
-        end
-    end
-end)
-```
-
 # Add code for `qb-radialmenu`
 - in `qb-radialmenu/client/main.lua` around line 107
 ```lua
@@ -145,7 +81,6 @@ VehicleMenu.items[#VehicleMenu.items + 1] = {
     shouldClose = true
 }
 ```
-
 
 # LICENSE
 [GPL LICENSE](./LICENSE)<br />

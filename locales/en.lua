@@ -20,6 +20,7 @@ local Translations = {
         ['line_not_broken'] = "This brakeline is not broken.",
         ['brakeline_is_brakeline'] = "Brakeline is broken",
         ['repair_brakeline'] = "Repair Brakeline",
+        ['close'] = "Close",
     },
 }
 

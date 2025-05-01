@@ -12,16 +12,17 @@ SV_Config.MoneyType = 'cash'         -- You can use cash, bank, or if you use mh
 SV_Config.NotifyScript = "k5_notify" -- you can use (qb, k5_notify, okokNotify, Roda_Notifications)
 SV_Config.InteractButton = 38        -- E, if you want to change this see: https://docs.fivem.net/docs/game-references/controls/
 SV_Config.InteractText = "E"         -- 38, if you want to change this see: https://docs.fivem.net/docs/game-references/controls/
-SV_Config.UseMiniGame = false
+SV_Config.UseMiniGame = true
 SV_Config.SkillBarType = 'medium'    -- Use easy, medium, hard.
 SV_Config.SkillBarKeys = 'wad'       -- Default 1234 or wad.
 SV_Config.UseInventory = false
+SV_Config.ImagesBaseFolder = "nui://qb-inventory/html/images/"
+SV_Config.MenuScript = "ox_lib"      -- default qb-menu but you can use ox_lib aswell when SV_Config.UseInventory is false
 
 SV_Config.Items = {
-    --  Default Items do not change the items below this
-    [1] = {name = "brake_cutter", price = 100, amount = 10},
-    [2] = {name = "brake_line",  price = 500, amount = 10},
-    [3] = {name = "brake_oil", price = 150, amount = 10},
+    [1] = {name = "brake_cutter", label = 'Brake Cutter', price = 25, amount = 10},
+    [2] = {name = "brake_line",  label = 'Brake Line', price = 100, amount = 10},
+    [3] = {name = "brake_oil", label = 'Brake Oil', price = 150, amount = 10},
 }
 
 SV_Config.Shops = {

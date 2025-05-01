@@ -266,19 +266,6 @@ local function UpdateLineData(vehicle, bone, plate, type)
     end
 end
 
-RegisterNetEvent('mh-brakes:server:openShop', function(shopId)
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-    if SV_Config.Shops[shopId] then
-        local shopitems = GetShopItems(shopId)
-        exports['qb-inventory']:CreateShop({name = 'toolsmarket-' .. shopId, label = SV_Config.Shops[shopId].label, slots = #shopitems, items = shopitems})
-        exports['qb-inventory']:OpenShop(src, 'toolsmarket-' .. shopId)
-    else
-        TriggerClientEvent('mh-brakes:client:notify', src, Lang:t('info.shop_not_found'))
-    end
-end)
-
 RegisterServerEvent("mh-brakes:server:removeItem", function(item)
     local src = source
     if not item then return end
@@ -297,23 +284,33 @@ RegisterServerEvent("mh-brakes:server:removeItem", function(item)
             end
         else
             Player.Functions.RemoveItem(tmpItem.name, 1)
-            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[tmpItem.name], 'remove', 1)
+            if GetResourceState("qb-inventory") ~= 'missing' then
+                TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[tmpItem.name], 'remove', 1)
+            end
         end
     end
 end)
 
-RegisterNetEvent('mh-brakes:server:giveitem', function(source, item, amount, price)
-    local src = source
+RegisterNetEvent('mh-brakes:server:giveitem', function(data)
+    local tmpData = nil
+    if type(data) == 'table' then if data.data ~= nil then tmpData = data.data else tmpData = data end end
+    local src = tmpData.src
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
-    if item == SV_Config.BrakeLine.Cut.item then
-        local current = Player.Functions.GetMoney(Config.MoneyType)
-        if current >= price then
-            Player.Functions.RemoveMoney(Config.MoneyType, amount)
-            local info = { quality = SV_Config.BrakeLine.Cut.MaxQuality }
-            Player.Functions.AddItem(SV_Config.BrakeLine.Cut.item, 1, nil, info)
-            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[SV_Config.BrakeLine.Cut.item], 'add', 1)
+    local price = tmpData.price * tmpData.amount
+    local current = Player.Functions.GetMoney(SV_Config.MoneyType)
+    if current >= price then
+        Player.Functions.RemoveMoney(SV_Config.MoneyType, price)
+        if tmpData.name == SV_Config.BrakeLine.Cut.item then
+            Player.Functions.AddItem(tmpData.name, tmpData.amount, nil, { quality = SV_Config.BrakeLine.Cut.MaxQuality })
+        else
+            Player.Functions.AddItem(tmpData.name, tmpData.amount, nil, nil)
         end
+        if GetResourceState("qb-inventory") ~= 'missing' then
+            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[tmpData.name], 'add', data.amount)
+        end
+    else
+        TriggerClientEvent('mh-brakes:client:notify', src, "you have no money....")
     end
 end)
 
