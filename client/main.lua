@@ -404,9 +404,9 @@ end
 local function LossControl(vehicle)
     SetBrakeForce(vehicle, 0.0)
     SetVehicleReduceGrip(vehicle, true)
-    Wait(math.random(1, 3) * 1000)
+    Wait(math.random(1, 3) * 2000)
     SetVehicleReduceGrip(vehicle, false)
-    local netid = VehToNet(vehicle)
+    local netid = NetworkGetNetworkIdFromEntity(vehicle)
     if hasLeaked[netid] and hasLeaked[netid].status then return end
     SetBrakeForce(vehicle, 1.0)
 end
@@ -523,7 +523,7 @@ CreateThread(function()
                 if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
                     local vehicleCoords = GetEntityCoords(vehicle)
                     for k, v in pairs(hasLeaked) do
-                        if v.status and v.coords ~= nil then
+                        if v.coords ~= nil then
                             local distance = GetDistance(v.coords, vehicleCoords)
                             if distance <= 5.0 then LossControl(vehicle) end
                         end
