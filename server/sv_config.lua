@@ -15,7 +15,6 @@ SV_Config.InteractText = "E"         -- 38, if you want to change this see: http
 SV_Config.UseMiniGame = true
 SV_Config.SkillBarType = 'medium'    -- Use easy, medium, hard.
 SV_Config.SkillBarKeys = 'wad'       -- Default 1234 or wad.
-SV_Config.UseInventory = false
 SV_Config.ImagesBaseFolder = "nui://qb-inventory/html/images/"
 SV_Config.MenuScript = "ox_lib"      -- default qb-menu but you can use ox_lib aswell when SV_Config.UseInventory is false
 
@@ -28,7 +27,7 @@ SV_Config.Items = {
 SV_Config.Shops = {
     {
         id = 1,
-        enable = true, -- if false you need to add the items in qb-shops.
+        enable = true, -- if false you need to add the items in qb-shops or add it in the crafting bench.
         label = "Tools Shops",
         items = SV_Config.Items,
         ped = {
