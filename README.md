@@ -5,20 +5,20 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/MaDHouSe79/mh-brakes/issues">
-        <img src="https://img.shields.io/github/issues/MaDHouSe79/mh-brakes"/> 
+    <a href="https://github.com/MaDHouSe79/mh-vehiclesabotage/issues">
+        <img src="https://img.shields.io/github/issues/MaDHouSe79/mh-vehiclesabotage"/> 
     </a>
-    <a href="https://github.com/MaDHouSe79/mh-brakes/watchers">
-        <img src="https://img.shields.io/github/watchers/MaDHouSe79/mh-brakes"/> 
+    <a href="https://github.com/MaDHouSe79/mh-vehiclesabotage/watchers">
+        <img src="https://img.shields.io/github/watchers/MaDHouSe79/mh-vehiclesabotage"/> 
     </a> 
-    <a href="https://github.com/MaDHouSe79/mh-brakes/network/members">
-        <img src="https://img.shields.io/github/forks/MaDHouSe79/mh-brakes"/> 
+    <a href="https://github.com/MaDHouSe79/mh-vehiclesabotage/network/members">
+        <img src="https://img.shields.io/github/forks/MaDHouSe79/mh-vehiclesabotage"/> 
     </a>  
-    <a href="https://github.com/MaDHouSe79/mh-brakes/stargazers">
-        <img src="https://img.shields.io/github/stars/MaDHouSe79/mh-brakes?color=white"/> 
+    <a href="https://github.com/MaDHouSe79/mh-vehiclesabotage/stargazers">
+        <img src="https://img.shields.io/github/stars/MaDHouSe79/mh-vehiclesabotage?color=white"/> 
     </a>
-    <a href="https://github.com/MaDHouSe79/mh-brakes/blob/main/LICENSE">
-        <img src="https://img.shields.io/github/license/MaDHouSe79/mh-brakes?color=black"/> 
+    <a href="https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/LICENSE">
+        <img src="https://img.shields.io/github/license/MaDHouSe79/mh-vehiclesabotage?color=black"/> 
     </a>      
 </p>
 
@@ -26,7 +26,7 @@
 - [Subscribe](https://www.youtube.com/c/@MaDHouSe79) 
 - [Discord](https://discord.gg/vJ9EukCmJQ)
 
-# MH Brakes (OneSync Required)
+# MH Vehicle Sabotage (OneSync Required)
 - Sabotage any vehicle brakes, any player that drive this vehicle have no brakes.
 - A player can fix the brakes if they have the items that is needed,
 - but if you set `SV_Config.UseAsJob` to true, then only players with the job can use and fix it.
@@ -41,14 +41,14 @@
 - [qb-minigames](https://github.com/qbcore-framework/qb-core/qb-minigames)
 
 # Inventory Images
-![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_cutter.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_line.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-brakes/blob/main/image/brake_oil.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_cutter.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_line.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_oil.png?raw=true)
 
 # Installation
-- Place the folder `mh-brakes` in the folder `[mh]`
+- Place the folder `mh-vehiclesabotage` in the folder `[mh]`
 - Add the shared items in `qb-core/shared/items.lua`
-- Add the images from the `mh-brakes/images` folder to the `qb-inventory/html/images` folder.
+- Add the images from the `mh-vehiclesabotage/images` folder to the `qb-inventory/html/images` folder.
 - Add in server.cfg below `ensure [defaultmaps]` add `ensure [mh]`
 - Restart your server.
 
@@ -64,7 +64,7 @@ brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight
 ```lua
 function QBCore.Functions.DeleteVehicle(vehicle)
     SetEntityAsMissionEntity(vehicle, true, true)
-    TriggerServerEvent('mh-brakes:server:unregisterVehicle', NetworkGetNetworkIdFromEntity(vehicle)) -- or add here
+    TriggerServerEvent('mh-vehiclesabotage:server:unregisterVehicle', NetworkGetNetworkIdFromEntity(vehicle)) -- or add here
     DeleteVehicle(vehicle)
 end
 ```
@@ -77,7 +77,7 @@ VehicleMenu.items[#VehicleMenu.items + 1] = {
     title = 'Check Vehicle',
     icon = "check",
     type = 'client',
-    event = "mh-brakes:client:checkvehicle",
+    event = "mh-vehiclesabotage:client:checkvehicle",
     shouldClose = true
 }
 ```

@@ -1,6 +1,3 @@
---[[ ===================================================== ]] --
---[[          MH Cutting Brakes Script by MaDHouSe         ]] --
---[[ ===================================================== ]] --
 local Translations = {
     info = {
         ['open_shop'] = "Open Tool Shop",

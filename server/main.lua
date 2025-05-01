@@ -1,5 +1,5 @@
 --[[ ====================================================== ]] --
---[[              MH Brakes Script by MaDHouSe              ]] --
+--[[         MH Vehicle Sabotage Script by MaDHouSe         ]] --
 --[[ ====================================================== ]] --
 local QBCore = exports['qb-core']:GetCoreObject()
 local vehicles = {}
@@ -128,16 +128,16 @@ local function UseItem(src, item)
     if SV_Config.UseAsJob then
         if Player.PlayerData.job.type == SV_Config.NeededJobType and Player.PlayerData.job.onduty or IsAdmin(src) then
             if Player.Functions.HasItem(item, 1) then
-                TriggerClientEvent('mh-brakes:client:UseItem', src, item)
+                TriggerClientEvent('mh-vehiclesabotage:client:UseItem', src, item)
             else
                 RequiredItems(src, item)
             end
         else
-            TriggerClientEvent('mh-brakes:client:notify', src, Lang:t('info.wrong_job', {job = SV_Config.NeededJobType}))
+            TriggerClientEvent('mh-vehiclesabotage:client:notify', src, Lang:t('info.wrong_job', {job = SV_Config.NeededJobType}))
         end
     elseif not SV_Config.UseAsJob then
         if Player.Functions.HasItem(item, 1) then
-            TriggerClientEvent('mh-brakes:client:UseItem', src, item)
+            TriggerClientEvent('mh-vehiclesabotage:client:UseItem', src, item)
         else
             RequiredItems(src, item)
         end
@@ -154,7 +154,7 @@ local function CheckVehicle(netid)
             local plate = GetVehicleNumberPlateText(vehicle)
             local exist = DoesPlateExist(plate)
             if exist then
-                if SV_Config.Debug then print("[mh-brakes] - Create vehicle with broken brakes on plate: " .. plate) end
+                if SV_Config.Debug then print("[mh-vehiclesabotage] - Create vehicle with broken brakes on plate: " .. plate) end
                 AddVehicle(vehicle)
                 local vehicleData = GetVehicleData(plate)
                 if type(vehicleData) == 'table' then
@@ -166,7 +166,7 @@ local function CheckVehicle(netid)
                 end
                 return
             elseif not exist then
-                if SV_Config.Debug then print("[mh-brakes] - Create vehicle with good brakes on plate: " .. plate) end
+                if SV_Config.Debug then print("[mh-vehiclesabotage] - Create vehicle with good brakes on plate: " .. plate) end
                 AddVehicle(vehicle)
                 Entity(vehicle).state.line_empty = false
                 Entity(vehicle).state.wheel_lf = false
@@ -266,7 +266,7 @@ local function UpdateLineData(vehicle, bone, plate, type)
     end
 end
 
-RegisterServerEvent("mh-brakes:server:removeItem", function(item)
+RegisterServerEvent("mh-vehiclesabotage:server:removeItem", function(item)
     local src = source
     if not item then return end
     local Player = QBCore.Functions.GetPlayer(src)
@@ -291,7 +291,7 @@ RegisterServerEvent("mh-brakes:server:removeItem", function(item)
     end
 end)
 
-RegisterNetEvent('mh-brakes:server:giveitem', function(data)
+RegisterNetEvent('mh-vehiclesabotage:server:giveitem', function(data)
     local tmpData = nil
     if type(data) == 'table' then if data.data ~= nil then tmpData = data.data else tmpData = data end end
     local src = tmpData.src
@@ -310,15 +310,15 @@ RegisterNetEvent('mh-brakes:server:giveitem', function(data)
             TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[tmpData.name], 'add', data.amount)
         end
     else
-        TriggerClientEvent('mh-brakes:client:notify', src, "you have no money....")
+        TriggerClientEvent('mh-vehiclesabotage:client:notify', src, "you have no money....")
     end
 end)
 
-QBCore.Functions.CreateCallback("mh-brakes:server:OnJoin", function(source, cb)
+QBCore.Functions.CreateCallback("mh-vehiclesabotage:server:OnJoin", function(source, cb)
     cb({status = true, config = SV_Config})
 end)
 
-RegisterServerEvent("mh-brakes:server:syncDestroy", function(netid, bone)
+RegisterServerEvent("mh-vehiclesabotage:server:syncDestroy", function(netid, bone)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
@@ -331,7 +331,7 @@ RegisterServerEvent("mh-brakes:server:syncDestroy", function(netid, bone)
     end
 end)
 
-RegisterServerEvent("mh-brakes:server:syncRepair", function(netid, bone)
+RegisterServerEvent("mh-vehiclesabotage:server:syncRepair", function(netid, bone)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
@@ -340,7 +340,7 @@ RegisterServerEvent("mh-brakes:server:syncRepair", function(netid, bone)
     end
 end)
 
-RegisterServerEvent("mh-brakes:server:syncFixed", function(netid)
+RegisterServerEvent("mh-vehiclesabotage:server:syncFixed", function(netid)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
@@ -354,7 +354,7 @@ RegisterServerEvent("mh-vehiclesabotage:server:syncOilEffect", function(netid)
         local vehicle = NetworkGetEntityFromNetworkId(netid)
         if DoesEntityExist(vehicle) then
             if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.line_empty then
-                TriggerClientEvent('mh-brakes:client:showEffect', -1, netid)
+                TriggerClientEvent('mh-vehiclesabotage:client:showEffect', -1, netid)
             end
         end
     end

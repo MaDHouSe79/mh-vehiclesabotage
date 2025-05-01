@@ -1,5 +1,5 @@
 --[[ ====================================================== ]] --
---[[              MH Brakes Script by MaDHouSe              ]] --
+--[[         MH Vehicle Sabotage Script by MaDHouSe         ]] --
 --[[ ====================================================== ]] --
 local QBCore = exports['qb-core']:GetCoreObject()
 local PlayerData = {}
@@ -15,7 +15,6 @@ local countBraking = 0
 local maxBeforeBrakeCount = math.random(5, 10)
 local disableControll = false
 
-
 local function UseSkillBar()
     return exports["qb-minigames"]:Skillbar(config.SkillBarType, config.SkillBarKeys)
 end
@@ -26,9 +25,9 @@ end
 ---@param length number
 local function Notify(message, type, length)
     if GetResourceState("ox_lib") ~= 'missing' then
-        lib.notify({title = "MH Brakes", description = message, type = type})
+        lib.notify({title = "MH Vehicle Sabotage", description = message, type = type})
     else
-        QBCore.Functions.Notify({text = "MH Brakes", caption = message}, type, length)
+        QBCore.Functions.Notify({text = "MH Vehicle Sabotage", caption = message}, type, length)
     end
 end
 
@@ -122,7 +121,7 @@ local function ShopMenu()
                 onSelect = function()
                     local input = lib.inputDialog("amount_to_buy", {{type = 'number', label = "amount_to_buy", description = "enter the amount of items you want to buy", required = true, icon = 'hashtag'}})
                     if not input then return ShopMenu() end
-                    TriggerServerEvent('mh-brakes:server:giveitem', {src = PlayerData.source, name = v.name, price = v.price, amount = tonumber(input[1])})
+                    TriggerServerEvent('mh-vehiclesabotage:server:giveitem', {src = PlayerData.source, name = v.name, price = v.price, amount = tonumber(input[1])})
                     ShopMenu()
                 end
             }
@@ -139,7 +138,7 @@ local function ShopMenu()
             local description = 'Item: '..v.label..'<br />Price: $'..v.price..'<br />Amount: '..v.amount
             options[#options + 1] = {
                 header = "", txt = '<table><td style="text-align:left; height: 50px; padding: 5px;"><img src="'..image..'" style="width:80px;"></td><td style="text-align:top; height: 50px; padding: 15px;">'..description..'</td></table>',
-                params = {event = 'mh-brakes:server:giveitem', data = {src = PlayerData.source, name = v.name, price = v.price, amount = 1}}
+                params = {event = 'mh-vehiclesabotage:server:giveitem', data = {src = PlayerData.source, name = v.name, price = v.price, amount = 1}}
             }
         end
         options[#options + 1] = {header = Lang:t('info.close'), txt = '', params = {event = 'qb-menu:client:closeMenu'}}
@@ -305,7 +304,7 @@ local function DoJob(title, item, timer, vehicle, bone, trigger, endMessage, ani
     Wait(timer)
     FreezeEntityPosition(PlayerPedId(), false)
     ClearPedTasks(PlayerPedId())
-    TriggerServerEvent('mh-brakes:server:removeItem', item)
+    TriggerServerEvent('mh-vehiclesabotage:server:removeItem', item)
     TriggerServerEvent(trigger, NetworkGetNetworkIdFromEntity(vehicle), bone)
     Notify(endMessage, "success", 5000)
     canRepair = true
@@ -327,13 +326,13 @@ local function CutBrakes(netid, bone)
                 if config.UseMiniGame then
                     local success = UseSkillBar()
                     if success then
-                        DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
+                        DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
                     else
                         ClearPedTasks(PlayerPedId())
                         canRepair = true
                     end
                 else
-                    DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-brakes:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
+                    DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
                 end
             end
         else
@@ -354,7 +353,7 @@ local function RepairBrakes(netid, bone)
             if not isLineBroken then
                 return Notify(Lang:t('info.line_not_broken'), "success", 5000)
             elseif isLineBroken then
-                DoJob(Lang:t('info.repairing_brakes'), config.BrakeLine.Repair.item, config.BrakeLine.Repair.timer, vehicle, bone, 'mh-brakes:server:syncRepair', Lang:t('info.brakes_has_been_repaired'), config.BrakeLine.Repair)
+                DoJob(Lang:t('info.repairing_brakes'), config.BrakeLine.Repair.item, config.BrakeLine.Repair.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncRepair', Lang:t('info.brakes_has_been_repaired'), config.BrakeLine.Repair)
             end
         else
             Notify(Lang:t('info.vehicle_has_no_brakes'), "error", 5000)
@@ -375,7 +374,7 @@ local function RefillBrakeOil(netid, bone)
                 Notify(Lang:t('info.repair_the_brake_lines_first'), "error", 5000)
             elseif noDamage then
                 SetVehicleDoorOpen(vehicle, 4, false, true)
-                DoJob(Lang:t('info.refuel_brake_oil'), config.BrakeLine.Oil.item, config.BrakeLine.Oil.timer, vehicle, bone, 'mh-brakes:server:syncFixed', Lang:t('info.brakes_oil_has_refilled'), config.BrakeLine.Oil)
+                DoJob(Lang:t('info.refuel_brake_oil'), config.BrakeLine.Oil.item, config.BrakeLine.Oil.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncFixed', Lang:t('info.brakes_oil_has_refilled'), config.BrakeLine.Oil)
                 if hasLeaked[netid] then hasLeaked[netid].status = false end
             end
         else
@@ -413,7 +412,7 @@ local function LossControl(vehicle)
 end
 
 local function OnJoin()
-    QBCore.Functions.TriggerCallback("mh-brakes:server:OnJoin", function(data)
+    QBCore.Functions.TriggerCallback("mh-vehiclesabotage:server:OnJoin", function(data)
         if data.status then
             config = data.config
             PlayerData = QBCore.Functions.GetPlayerData()
@@ -448,11 +447,11 @@ RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     DeleteBlips()
 end)
 
-RegisterNetEvent('mh-brakes:client:notify', function(message, type, length)
+RegisterNetEvent('mh-vehiclesabotage:client:notify', function(message, type, length)
     Notify(message, type, length)
 end)
 
-RegisterNetEvent('mh-brakes:client:showEffect', function(netid)
+RegisterNetEvent('mh-vehiclesabotage:client:showEffect', function(netid)
     if hasLeaked[netid] and hasLeaked[netid].status then return end
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
@@ -461,12 +460,12 @@ RegisterNetEvent('mh-brakes:client:showEffect', function(netid)
     end
 end)
 
-RegisterNetEvent('mh-brakes:client:checkvehicle', function()
+RegisterNetEvent('mh-vehiclesabotage:client:checkvehicle', function()
     local vehicle = GetVehicleInFrontOfPlayer(PlayerPedId())
     if vehicle ~= nil and vehicle ~= -1 then CheckLine(vehicle) end
 end)
 
-RegisterNetEvent('mh-brakes:client:UseItem', function(item)
+RegisterNetEvent('mh-vehiclesabotage:client:UseItem', function(item)
     local vehicle, distance = GetClosestVehicle()
     if vehicle > 0 and distance <= 2.5 then
         TaskTurnPedToFaceEntity(PlayerPedId(), vehicle, 5000)
