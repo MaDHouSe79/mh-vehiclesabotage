@@ -44,6 +44,10 @@
 ![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_cutter.png?raw=true)
 ![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_line.png?raw=true)
 ![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_oil.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/carbom.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/tire_knife.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/toolbox.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/new_tire.png?raw=true)
 
 # Installation
 - Place the folder `mh-vehiclesabotage` in the folder `[mh]`
