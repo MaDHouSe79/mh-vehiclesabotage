@@ -54,9 +54,13 @@
 
 # QB Shared items
 ```lua
-brake_cutter                 = { name = 'brake_cutter', label = 'Brake Cutter', weight = 500, type = 'item', image = 'brake_cutter.png', unique = false, useable = true, shouldClose = true, description = 'A Brake Cutter to cut brake lines' },
+brake_cutter                 = { name = 'brake_cutter', label = 'Brake Cutter', weight = 100, type = 'item', image = 'brake_cutter.png', unique = true, useable = true, shouldClose = true, description = 'A Brake Cutter to cut brake lines' },
 brake_line                   = { name = 'brake_line', label = 'Brake Line', weight = 200, type = 'item', image = 'brake_line.png', unique = false, useable = true, shouldClose = true, description = 'A brake line to fix a vehicle brake' },
-brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 2500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
+brake_oil                    = { name = 'brake_oil', label = 'Brake Oil', weight = 500, type = 'item', image = 'brake_oil.png', unique = false, useable = true, shouldClose = true, description = 'To refill your vehicle brake oil' },
+carbom                       = { name = 'carbom', label = 'Car Bom', weight = 1000, type = 'item', image = 'carbom.png', unique = true, useable = true, shouldClose = true, description = 'A carbom' },
+toolbox                      = { name = 'toolbox', label = 'Toolbox', weight = 1000, type = 'item', image = 'toolbox.png', unique = false, useable = true, shouldClose = true, description = 'Toolbox' },
+tire_knife                   = { name = 'tire_knife', label = 'Tire knife', weight = 100, type = 'item', image = 'tire_knife.png', unique = true, useable = true, shouldClose = true, description = 'A Tire knife' },
+new_tire                     = { name = 'new_tire', label = 'New Tire', weight = 2500, type = 'item', image = 'new_tire.png', unique = true, useable = true, shouldClose = true, description = 'A new vehicle tire' },
 ```
 
 # Replace code in `qb-core` (client side)

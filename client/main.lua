@@ -5,7 +5,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local PlayerData = {}
 local peds = {}
 local blips = {}
-local hasLeaked = {}
+local vehicles = {}
 local isLoggedIn = false
 local displayBones = true
 local canRepair = true
@@ -194,23 +194,6 @@ local function CreateShopPeds()
     end
 end
 
---- Get Closest Vehicle
-local function GetClosestVehicle()
-    local coords = GetEntityCoords(PlayerPedId())
-    local vehicles = GetGamePool('CVehicle')
-    local closestDistance = -1
-    local closestVehicle = -1
-    for i = 1, #vehicles, 1 do
-        local vehicleCoords = GetEntityCoords(vehicles[i])
-        local distance = #(vehicleCoords - coords)
-        if closestDistance == -1 or closestDistance > distance then
-            closestVehicle = vehicles[i]
-            closestDistance = distance
-        end
-    end
-    return closestVehicle, closestDistance
-end
-
 --- Get Closest Wheel
 ---@param vehicle entity
 local function GetClosestWheel(vehicle)
@@ -256,16 +239,31 @@ end
 --- Check if a line has damage
 ---@param vehicle entity
 local function LineHasDamage(vehicle)
-    if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.line_empty then
+    if Entity(vehicle).state.brakeline_lf or Entity(vehicle).state.brakeline_rf or Entity(vehicle).state.brakeline_lr or Entity(vehicle).state.brakeline_rr or Entity(vehicle).state.brakeline_damage then
         return true
     end
     return false
 end
 
---- Checks if a line has no damage
+--- Check if a line has damage
 ---@param vehicle entity
-local function NoLineDamage(vehicle)
-    if not Entity(vehicle).state.wheel_lf and not Entity(vehicle).state.wheel_rf and not Entity(vehicle).state.wheel_lr and not Entity(vehicle).state.wheel_rr then
+local function HasTireDamage(vehicle)
+    if Entity(vehicle).state.tire_lf or Entity(vehicle).state.tire_rf or Entity(vehicle).state.tire_lr or Entity(vehicle).state.tire_rr or Entity(vehicle).state.tire_damage then
+        return true
+    end
+    return false
+end
+
+--- Check if a line has damage
+---@param vehicle entity
+local function IsTirelineAlreadyDamaged(vehicle)
+    if bone == "wheel_lf" and Entity(vehicle).state.tire_lf then
+        return true
+    elseif bone == "wheel_rf" and Entity(vehicle).state.tire_rf then
+        return true
+    elseif bone == "wheel_lr" and Entity(vehicle).state.tire_lr then
+        return true
+    elseif bone == "wheel_rr" and Entity(vehicle).state.tire_rr then
         return true
     end
     return false
@@ -275,13 +273,13 @@ end
 ---@param vehicle entity
 ---@param bone string
 local function IsBrakelineAlreadyBroken(vehicle, bone)
-    if bone == "wheel_lf" and Entity(vehicle).state.wheel_lf then
+    if bone == "wheel_lf" and Entity(vehicle).state.brakeline_lf then
         return true
-    elseif bone == "wheel_rf" and Entity(vehicle).state.wheel_rf then
+    elseif bone == "wheel_rf" and Entity(vehicle).state.brakeline_rf then
         return true
-    elseif bone == "wheel_lr" and Entity(vehicle).state.wheel_lr then
+    elseif bone == "wheel_lr" and Entity(vehicle).state.brakeline_lr then
         return true
-    elseif bone == "wheel_rr" and Entity(vehicle).state.wheel_rr then
+    elseif bone == "wheel_rr" and Entity(vehicle).state.brakeline_rr then
         return true
     end
     return false
@@ -296,6 +294,15 @@ end
 ---@param trigger string
 ---@param endMessage string
 ---@param animData table
+
+--[[
+'0 = wheel_lf / bike, plane or jet front  
+'1 = wheel_rf  
+'2 = wheel_lm
+'3 = wheel_rm 
+'4 = wheel_lr 
+'5 = wheel_rr
+]]
 local function DoJob(title, item, timer, vehicle, bone, trigger, endMessage, animData)
     LoadAnimDict(animData.animation.dict)
     disableControll = true
@@ -306,7 +313,149 @@ local function DoJob(title, item, timer, vehicle, bone, trigger, endMessage, ani
     canRepair = true
     TriggerServerEvent('mh-vehiclesabotage:server:removeItem', item)
     TriggerServerEvent(trigger, NetworkGetNetworkIdFromEntity(vehicle), bone)
+    if item == config.VehicleTire.Damage.item then
+        if bone == 'wheel_lf' then SetVehicleTyreBurst(vehicle, 0, true, 999) end
+        if bone == 'wheel_lf' then SetVehicleTyreBurst(vehicle, 1, true, 999) end
+        if bone == 'wheel_lr' then SetVehicleTyreBurst(vehicle, 4, true, 999) end
+        if bone == 'wheel_rr' then SetVehicleTyreBurst(vehicle, 5, true, 999) end
+    end
+    if item == config.VehicleTire.Repair.item then
+        if bone == 'wheel_lf' then SetVehicleTyreFixed(vehicle, 0) end
+        if bone == 'wheel_rf' then SetVehicleTyreFixed(vehicle, 1) end
+        if bone == 'wheel_lr' then SetVehicleTyreFixed(vehicle, 4) end
+        if bone == 'wheel_rr' then SetVehicleTyreFixed(vehicle, 5) end
+    end
     Notify(endMessage, "success", 5000)
+end
+
+local function BomMenu(vehicle)
+    local options = {}
+    options[#options + 1] = {
+        title = 'Place a timed bom',
+        icon = config.Fontawesome.boss,
+        description = '',
+        arrow = false,
+        onSelect = function()
+            local input = lib.inputDialog('Enter a timer', {
+                {
+                    type = 'number',
+                    label = 'Enter number',
+                    description = 'How long before the bom explode?',
+                    required = true,
+                    icon = 'hashtag'
+                }
+            })
+            if not input then
+                disableControll = false
+                FreezeEntityPosition(PlayerPedId(), false)
+                return
+            end
+            DoJob("Adding a timed bom on the vehicle", config.VehicleBom.Add.item, 5000, vehicle, tonumber(input[1]), 'mh-vehiclesabotage:server:syncAddTimedBom', "Speed bom is placed", config.VehicleBom.Add)
+        end
+    }
+
+    options[#options + 1] = {
+        title = 'place a speed bom',
+        icon = config.Fontawesome.boss,
+        description = '',
+        arrow = false,
+        onSelect = function()
+            local input = lib.inputDialog('Enter a speed', {
+                {
+                    type = 'number',
+                    label = 'Enter number',
+                    description = 'The speed amount when the bom actived.',
+                    required = true,
+                    icon = 'hashtag'
+                }
+            })
+            if not input then
+                disableControll = false
+                FreezeEntityPosition(PlayerPedId(), false)
+                return
+            end
+            DoJob("Adding a speed bom on the vehicle", config.VehicleBom.Add.item, 5000, vehicle, tonumber(input[1]), 'mh-vehiclesabotage:server:syncAddSpeedBom', "Speed bom is placed", config.VehicleBom.Add)
+        end
+    }
+
+    options[#options + 1] = {
+        title = Lang:t('info.close'),
+        icon = config.Fontawesome.goback,
+        description = '',
+        arrow = false,
+        onSelect = function()
+        end
+    }
+    lib.registerContext({ id = 'BomMenu', title = 'Bom Menu', icon = config.Fontawesome.garage, options = options })
+    lib.showContext('BomMenu')
+end
+
+local function PlaceBom(netid)
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
+        if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or IsThisModelABicycle(GetEntityModel(vehicle)) then
+            if Entity(vehicle).state.hasBom then
+                disableControll = false
+                FreezeEntityPosition(PlayerPedId(), false)
+                return
+            elseif not Entity(vehicle).state.hasBom then
+                local success = UseSkillBar('easy', 'wad')
+                if success then
+                    BomMenu(vehicle)
+                else
+                    disableControll = false
+                    FreezeEntityPosition(PlayerPedId(), false)
+                end
+            end
+        end
+    end
+end
+
+--- Cut brake line
+---@param netid number
+---@param bone string
+local function DamageTire(netid, bone)
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
+        if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or IsThisModelABicycle(GetEntityModel(vehicle)) then
+            local hasTireDamage = IsTirelineAlreadyDamaged(vehicle, bone)
+            if hasTireDamage then
+                disableControll = false
+                FreezeEntityPosition(PlayerPedId(), false)
+                return
+            elseif not hasTireDamage then
+                local success = UseSkillBar('easy', 'wad')
+                if success then
+                    DoJob("Damage Tire", config.VehicleTire.Damage.item, config.VehicleTire.Damage.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncDamageTire', "Tire is damage", config.VehicleTire.Damage)
+                else
+                    disableControll = false
+                    FreezeEntityPosition(PlayerPedId(), false)
+                end
+            end
+        end
+    end
+end
+
+local function RepairTire(netid, bone)
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
+        if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or IsThisModelABicycle(GetEntityModel(vehicle)) then
+            local hasTireDamage = HasTireDamage(vehicle, bone)
+            print("RepairTire", hasTireDamage)
+            if not hasTireDamage then
+                disableControll = false
+                FreezeEntityPosition(PlayerPedId(), false)
+                return
+            elseif hasTireDamage then
+                local success = UseSkillBar('easy', 'wad')
+                if success then
+                    DoJob('Repairing Tire', config.VehicleTire.Repair.item, config.VehicleTire.Repair.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncRepairTire', "tire fixed", config.VehicleTire.Repair)
+                end
+            end
+        else
+            Notify(Lang:t('info.vehicle_has_no_brakes'), "error", 5000)
+        end
+    end
 end
 
 --- Cut brake line
@@ -324,7 +473,7 @@ local function CutBrakes(netid, bone)
             elseif not isBrakelineAlreadyBroken then
                 local success = UseSkillBar('easy', 'wad')
                 if success then
-                    DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncDestroy', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
+                    DoJob(Lang:t('info.cutting_brakes'), config.BrakeLine.Cut.item, config.BrakeLine.Cut.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncDestroyBrakes', Lang:t('info.brakes_has_been_cut'), config.BrakeLine.Cut)
                 end
             end
         else
@@ -345,7 +494,7 @@ local function RepairBrakes(netid, bone)
             if not isLineBroken then
                 return Notify(Lang:t('info.line_not_broken'), "success", 5000)
             elseif isLineBroken then
-                DoJob(Lang:t('info.repairing_brakes'), config.BrakeLine.Repair.item, config.BrakeLine.Repair.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncRepair', Lang:t('info.brakes_has_been_repaired'), config.BrakeLine.Repair)
+                DoJob(Lang:t('info.repairing_brakes'), config.BrakeLine.Repair.item, config.BrakeLine.Repair.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncRepairBrakes', Lang:t('info.brakes_has_been_repaired'), config.BrakeLine.Repair)
             end
         else
             Notify(Lang:t('info.vehicle_has_no_brakes'), "error", 5000)
@@ -359,15 +508,14 @@ end
 local function RefillBrakeOil(netid, bone)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) and type(Entity(vehicle).state) == 'table' then
-        if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or
-            IsThisModelABicycle(GetEntityModel(vehicle)) then
-            local noDamage = NoLineDamage(vehicle)
-            if not noDamage then
+        if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or IsThisModelABicycle(GetEntityModel(vehicle)) then
+            local lineHasDamage = LineHasDamage(vehicle)
+            if not lineHasDamage then
                 Notify(Lang:t('info.repair_the_brake_lines_first'), "error", 5000)
-            elseif noDamage then
+            elseif lineHasDamage then
                 SetVehicleDoorOpen(vehicle, 4, false, true)
-                DoJob(Lang:t('info.refuel_brake_oil'), config.BrakeLine.Oil.item, config.BrakeLine.Oil.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncFixed', Lang:t('info.brakes_oil_has_refilled'), config.BrakeLine.Oil)
-                if hasLeaked[netid] then hasLeaked[netid].status = false end
+                DoJob(Lang:t('info.refuel_brake_oil'), config.BrakeLine.Oil.item, config.BrakeLine.Oil.timer, vehicle, bone, 'mh-vehiclesabotage:server:syncRefillBrakeOil', Lang:t('info.brakes_oil_has_refilled'), config.BrakeLine.Oil)
+                if vehicles[netid] then vehicles[netid].hasLeaked = false end
             end
         else
             Notify(Lang:t('info.vehicle_has_no_brakes'), "error", 5000)
@@ -381,25 +529,27 @@ local function GetVehicleInFrontOfPlayer(ped)
     local rayHandle = CastRayPointToPoint(coords.x, coords.y, coords.z - 1.3, offset.x, offset.y, offset.z, 10, ped, 0)
     local retval, hit, endCoords, surfaceNormal, entityHit = GetRaycastResult(rayHandle)
     if IsEntityAVehicle(entityHit) then return entityHit end
-    return nil
+    return -1
 end
 
 local function CheckLine(vehicle)
     local lineHasDamage = LineHasDamage(vehicle)
-    if lineHasDamage or Entity(vehicle).state.line_empty then
+    if lineHasDamage or Entity(vehicle).state.brakeline_damage then
         Notify(Lang:t("info.lines_has_damage"), "error", 5000)
-    elseif not lineHasDamage and not Entity(vehicle).state.line_empty then
+    elseif not lineHasDamage and not Entity(vehicle).state.brakeline_damage then
         Notify(Lang:t("info.lines_has_no_damage"), "error", 5000)
     end
 end
 
 local function LossControl(vehicle)
+    disableControll = true
     SetBrakeForce(vehicle, 0.0)
     SetVehicleReduceGrip(vehicle, true)
     Wait(math.random(1, 3) * 2000)
+    disableControll = false
     SetVehicleReduceGrip(vehicle, false)
     local netid = NetworkGetNetworkIdFromEntity(vehicle)
-    if hasLeaked[netid] and hasLeaked[netid].status then return end
+    if vehicles[netid] and vehicles[netid].hasLeaked then return end
     SetBrakeForce(vehicle, 1.0)
 end
 
@@ -415,6 +565,7 @@ local function OnJoin()
         end
     end)
 end
+
 local function OnPart()
     PlayerData = {}
     isLoggedIn = false
@@ -422,7 +573,6 @@ local function OnPart()
     DeletePeds()
     DeleteBlips()
 end
-
 
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
@@ -445,27 +595,31 @@ RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     DeleteBlips()
 end)
 
+RegisterNetEvent('QBCore:Player:SetPlayerData', function(data)
+    PlayerData = data
+end)
+
 RegisterNetEvent('mh-vehiclesabotage:client:notify', function(message, type, length)
     Notify(message, type, length)
 end)
 
 RegisterNetEvent('mh-vehiclesabotage:client:showEffect', function(netid)
-    if hasLeaked[netid] and hasLeaked[netid].status then return end
+    if vehicles[netid] and vehicles[netid].hasLeaked then return end
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
-        hasLeaked[netid] = {status = true, coords = GetEntityCoords(vehicle)}
+        vehicles[netid] = {hasLeaked = true, coords = GetEntityCoords(vehicle)}
         StartBrakeOilLeak(vehicle)
     end
 end)
 
 RegisterNetEvent('mh-vehiclesabotage:client:checkvehicle', function()
     local vehicle = GetVehicleInFrontOfPlayer(PlayerPedId())
-    if vehicle ~= nil and vehicle ~= -1 then CheckLine(vehicle) end
+    if vehicle ~= -1 then CheckLine(vehicle) end
 end)
 
 RegisterNetEvent('mh-vehiclesabotage:client:UseItem', function(item)
-    local vehicle, distance = GetClosestVehicle()
-    if vehicle > 0 and distance <= 2.5 then
+    local vehicle = GetVehicleInFrontOfPlayer(PlayerPedId())
+    if vehicle ~= -1 then
         local wheel, bone = GetClosestWheel(vehicle)
         TaskTurnPedToFaceEntity(PlayerPedId(), vehicle, 5000)
         Wait(1000)
@@ -476,6 +630,12 @@ RegisterNetEvent('mh-vehiclesabotage:client:UseItem', function(item)
                 RepairBrakes(NetworkGetNetworkIdFromEntity(vehicle), bone)
             elseif item == config.BrakeLine.Oil.item then
                 RefillBrakeOil(NetworkGetNetworkIdFromEntity(vehicle), bone)
+            elseif item == config.VehicleBom.Add.item then
+                PlaceBom(NetworkGetNetworkIdFromEntity(vehicle))
+            elseif item == config.VehicleTire.Damage.item then
+                DamageTire(NetworkGetNetworkIdFromEntity(vehicle), bone)
+            elseif item == config.VehicleTire.Repair.item then
+                RepairTire(NetworkGetNetworkIdFromEntity(vehicle), bone)
             end
         else
             Notify(Lang:t('info.no_at_possition'), "error", 5000)
@@ -487,13 +647,15 @@ end)
 
 CreateThread(function()
     while true do
+        local sleep = 1000
         if isLoggedIn then
             if IsPedInAnyVehicle(PlayerPedId(), false) and GetVehiclePedIsUsing(PlayerPedId()) ~= 0 then
                 local vehicle = GetVehiclePedIsUsing(PlayerPedId())
                 if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+                    sleep = 100
                     local hasDamage = LineHasDamage(vehicle)
                     if GetBrakeForce(vehicle) == 0.0 then DisableControlAction(0, 76, true) end
-                    if hasDamage or Entity(vehicle).state.line_empty then
+                    if hasDamage or Entity(vehicle).state.brakeline_damage then
                         local netid = NetworkGetNetworkIdFromEntity(vehicle)
                         if IsControlJustReleased(0, 72) or IsControlJustReleased(0, 76) then
                             if countBraking < maxBeforeBrakeCount then countBraking = countBraking + 1 end
@@ -503,24 +665,26 @@ CreateThread(function()
                             SetBrakeForce(vehicle, 0.0)
                             TriggerServerEvent('mh-vehiclesabotage:server:syncOilEffect', netid)
                         end
-                    elseif not hasDamage and not Entity(vehicle).state.line_empty then
+                    elseif not hasDamage and not Entity(vehicle).state.brakeline_damage then
                         SetBrakeForce(vehicle, 1.0)
                     end
                 end
             end
         end
-        Wait(0)
+        Wait(sleep)
     end
 end)
 
 CreateThread(function()
     while true do
+        local sleep = 1000
         if isLoggedIn then
             if IsPedInAnyVehicle(PlayerPedId(), false) then
                 local vehicle = GetVehiclePedIsUsing(PlayerPedId())
                 if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+                    sleep = 100
                     local vehicleCoords = GetEntityCoords(vehicle)
-                    for k, v in pairs(hasLeaked) do
+                    for k, v in pairs(vehicles) do
                         if v.coords ~= nil then
                             local distance = GetDistance(v.coords, vehicleCoords)
                             if distance <= 5.0 then LossControl(vehicle) end
@@ -529,14 +693,47 @@ CreateThread(function()
                 end
             end
         end
-        Wait(0)
+        Wait(sleep)
+    end
+end)
+
+local timer = 0
+local bomactivated = false
+CreateThread(function()
+    while true do
+        local sleep = 1000
+        if isLoggedIn then
+            if IsPedInAnyVehicle(PlayerPedId(), false) and not PlayerData.metadata['isdead'] then
+                local vehicle = GetVehiclePedIsUsing(PlayerPedId())
+                if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+                    local coords = GetEntityCoords(vehicle)
+                    if Entity(vehicle).state.hasBom and not Entity(vehicle).state.exploded then
+                        if Entity(vehicle).state.speed ~= false and type(Entity(vehicle).state.speed) == 'number' and Entity(vehicle).state.timed == false then
+                            local speed = GetEntitySpeed(vehicle) * config.SpeedMultiplier
+                            if speed < Entity(vehicle).state.speed + 0.0 then bomactivated = false end
+                            if speed > Entity(vehicle).state.speed + 0.0 then bomactivated = true end
+                        elseif Entity(vehicle).state.timed ~= false and type(Entity(vehicle).state.timed) == 'number' and Entity(vehicle).state.speed == false then
+                            if timer < Entity(vehicle).state.timed then timer = timer + 1 end
+                            if timer >= Entity(vehicle).state.timed then bomactivated = true end
+                        end
+                        if bomactivated then
+                            bomactivated = false
+                            NetworkExplodeVehicle(vehicle, true, true, 0)
+                            TriggerServerEvent('mh-vehiclesabotage:server:syncVehicleExploded', NetworkGetNetworkIdFromEntity(vehicle))
+                            timer = 0
+                            sleep = 10000
+                        end
+                    end
+                end
+            end
+        end
+        Wait(sleep)
     end
 end)
 
 CreateThread(function()
     while true do
         local sleep = 1000
-        PlayerData = QBCore.Functions.GetPlayerData()
         if isLoggedIn and disableControll and not PlayerData.metadata['isdead'] then
             sleep = 5
             if IsPauseMenuActive() then SetFrontendActive(false) end

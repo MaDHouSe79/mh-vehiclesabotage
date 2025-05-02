@@ -27,23 +27,6 @@ local function IsCorrectItem(item)
     return isCorrect
 end
 
---- Get shop items
----@param shopId number
-local function GetShopItems(shopId)
-    local shopitems = {}
-    for _, item in pairs(SV_Config.Shops[shopId].items) do
-        local isCorrect = IsCorrectItem(item.name)
-        if isCorrect then
-            shopitems[#shopitems + 1] = {
-                name = item.name,
-                amount = item.amount,
-                price = item.price
-            }
-        end
-    end
-    return shopitems
-end
-
 --- Display ther required items
 ---@param src number
 ---@param item string
@@ -58,7 +41,7 @@ end
 ---@param plate any
 local function DoesPlateExist(plate)
     local found = false
-    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', { plate })
+    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_vehicle_sabotage WHERE plate = ?', { plate })
     if result ~= nil and result[1] ~= nil and result[1].plate ~= nil and result[1].plate == plate then
         found = true
     end
@@ -69,7 +52,7 @@ end
 ---@param plate string
 local function GetVehicleData(plate)
     local data = {}
-    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_brakes WHERE plate = ?', { plate })
+    local result = MySQL.Sync.fetchAll('SELECT * FROM mh_vehicle_sabotage WHERE plate = ?', { plate })
     if result ~= nil and result[1] ~= nil then
         data = result[1]
     end
@@ -79,13 +62,30 @@ end
 --- Checks if a line is broken
 ---@param vehicle any
 local function IsALineBroken(vehicle)
-    if Entity(vehicle).state.wheel_lf then
+    if Entity(vehicle).state.brakeline_lf then
         return true
-    elseif Entity(vehicle).state.wheel_rf then
+    elseif Entity(vehicle).state.brakeline_rf then
         return true
-    elseif Entity(vehicle).state.wheel_lr then
+    elseif Entity(vehicle).state.brakeline_lr then
         return true
-    elseif Entity(vehicle).state.wheel_rr then
+    elseif Entity(vehicle).state.brakeline_rr then
+        return true
+    end
+    return false
+end
+
+--- Checks if a line is broken
+---@param vehicle any
+local function HasTireDamage(vehicle)
+    if Entity(vehicle).state.tire_lf then
+        return true
+    elseif Entity(vehicle).state.tire_rf then
+        return true
+    elseif Entity(vehicle).state.tire_lr then
+        return true
+    elseif Entity(vehicle).state.tire_rr then
+        return true
+    elseif Entity(vehicle).state.tire_damage then
         return true
     end
     return false
@@ -109,11 +109,16 @@ local function AddVehicle(vehicle)
     local exist = DoesVehicleExist(vehicle)
     if not exist then
         vehicles[#vehicles + 1] = vehicle
-        Entity(vehicle).state.line_empty = false
-        Entity(vehicle).state.wheel_lf = false
-        Entity(vehicle).state.wheel_rf = false
-        Entity(vehicle).state.wheel_lr = false
-        Entity(vehicle).state.wheel_rr = false
+        Entity(vehicle).state.brakeline_damage = false
+        Entity(vehicle).state.brakeline_lf = false
+        Entity(vehicle).state.brakeline_rf = false
+        Entity(vehicle).state.brakeline_lr = false
+        Entity(vehicle).state.brakeline_rr = false
+        Entity(vehicle).state.tire_damage = false
+        Entity(vehicle).state.tire_lf = false
+        Entity(vehicle).state.tire_rf = false
+        Entity(vehicle).state.tire_lr = false
+        Entity(vehicle).state.tire_rr = false
     end
 end
 
@@ -125,7 +130,7 @@ local function UseItem(src, item)
     if not Player then return end
     local canUse = IsCorrectItem(item)
     if not canUse then return end
-    if SV_Config.UseAsJob then
+    if SV_Config.UseAsJob and item ~= 'carbom' then
         if Player.PlayerData.job.type == SV_Config.NeededJobType and Player.PlayerData.job.onduty or IsAdmin(src) then
             if Player.Functions.HasItem(item, 1) then
                 TriggerClientEvent('mh-vehiclesabotage:client:UseItem', src, item)
@@ -158,23 +163,60 @@ local function CheckVehicle(netid)
                 AddVehicle(vehicle)
                 local vehicleData = GetVehicleData(plate)
                 if type(vehicleData) == 'table' then
-                    Entity(vehicle).state.wheel_lf = (vehicleData.wheel_lf == 1) or false
-                    Entity(vehicle).state.wheel_rf = (vehicleData.wheel_rf == 1) or false
-                    Entity(vehicle).state.wheel_lr = (vehicleData.wheel_lr == 1) or false
-                    Entity(vehicle).state.wheel_rr = (vehicleData.wheel_rr == 1) or false
-                    Entity(vehicle).state.line_empty = (vehicleData.line_empty == 1) or false
+                    Entity(vehicle).state.brakeline_lf = (vehicleData.brakeline_lf == 1) or false
+                    Entity(vehicle).state.brakeline_rf = (vehicleData.brakeline_rf == 1) or false
+                    Entity(vehicle).state.brakeline_lr = (vehicleData.brakeline_lr == 1) or false
+                    Entity(vehicle).state.brakeline_rr = (vehicleData.brakeline_rr == 1) or false
+                    Entity(vehicle).state.brakeline_damage = (vehicleData.brakeline_damage == 1) or false
+                    Entity(vehicle).state.tire_lf = (vehicleData.tire_lf == 1) or false
+                    Entity(vehicle).state.tire_rf = (vehicleData.tire_rf == 1) or false
+                    Entity(vehicle).state.tire_lr = (vehicleData.tire_lr == 1) or false
+                    Entity(vehicle).state.tire_rr = (vehicleData.tire_rr == 1) or false
+                    Entity(vehicle).state.tire_damage = (vehicleData.tire_damage == 1) or false
                 end
                 return
             elseif not exist then
                 if SV_Config.Debug then print("[mh-vehiclesabotage] - Create vehicle with good brakes on plate: " .. plate) end
                 AddVehicle(vehicle)
-                Entity(vehicle).state.line_empty = false
-                Entity(vehicle).state.wheel_lf = false
-                Entity(vehicle).state.wheel_rf = false
-                Entity(vehicle).state.wheel_lr = false
-                Entity(vehicle).state.wheel_rr = false
                 return
             end
+        end
+    end
+end
+
+local function UpdateVehicleState(vehicle, bone, type, state)
+    if not bone then return end
+    if bone == "wheel_lf" then     -- Left front wheel.
+        if type == "brakeline_lf" then -- Brakeline
+            Entity(vehicle).state.brakeline_damage = state
+            Entity(vehicle).state.brakeline_lf = state
+        elseif type == "tire_lf" then -- Tire 
+            Entity(vehicle).state.tire_damage = state
+            Entity(vehicle).state.tire_lf = state
+        end
+    elseif bone == "wheel_rf" then -- Right front wheel.
+        if type == "brakeline_rf" then -- Brakelinee
+            Entity(vehicle).state.brakeline_damage = state
+            Entity(vehicle).state.brakeline_rf = state
+        elseif type == "tire_rf" then -- Tire
+            Entity(vehicle).state.tire_damage = state
+            Entity(vehicle).state.tire_rf = state
+        end
+    elseif bone == "wheel_lr" then -- Left Back wheel.
+        if type == "brakeline_lr" then  -- Brakeline
+            Entity(vehicle).state.brakeline_damage = state
+            Entity(vehicle).state.brakeline_lr = state
+        elseif type == "tire_lr" then -- Tire
+            Entity(vehicle).state.tire_damage = state
+            Entity(vehicle).state.tire_lr = state
+        end
+    elseif bone == "wheel_rr" then -- Right Back wheel.
+        if type == "brakeline_rr" then  -- Brakeline 
+            Entity(vehicle).state.brakeline_damage = state
+            Entity(vehicle).state.brakeline_rr = state
+        elseif type == "tire_rr" then -- Tire
+            Entity(vehicle).state.tire_damage = state
+            Entity(vehicle).state.tire_rr = state
         end
     end
 end
@@ -184,7 +226,7 @@ end
 ---@param bone any
 ---@param plate any
 ---@param type any
-local function UpdateLineData(vehicle, bone, plate, type)
+local function UpdateData(vehicle, bone, plate, type)
     if not vehicle or not type or not plate then return end
     if DoesEntityExist(vehicle) then
         local query, data = nil, nil
@@ -192,71 +234,101 @@ local function UpdateLineData(vehicle, bone, plate, type)
             if not bone then return end
             data = { 1, plate, 1 }
             if bone == 'wheel_lf' then
-                query = "INSERT INTO mh_brakes (wheel_lf, plate, line_empty) VALUES (?, ?, ?)"
-                Entity(vehicle).state.wheel_lf = true
-                Entity(vehicle).state.line_empty = true
+                query = "INSERT INTO mh_vehicle_sabotage (brakeline_lf, plate, brakeline_damage) VALUES (?, ?, ?)"
+                UpdateVehicleState(vehicle, "wheel_rf", "brakeline_lf", true)
             elseif bone == 'wheel_rf' then
-                query = "INSERT INTO mh_brakes (wheel_rf, plate, line_empty) VALUES (?, ?, ?)"
-                Entity(vehicle).state.wheel_rf = true
-                Entity(vehicle).state.line_empty = true
+                query = "INSERT INTO mh_vehicle_sabotage (brakeline_rf, plate, brakeline_damage) VALUES (?, ?, ?)"
+                UpdateVehicleState(vehicle, "wheel_rf", "brakeline_rf", true)
             elseif bone == 'wheel_lr' then
-                query = "INSERT INTO mh_brakes (wheel_lr, plate, line_empty) VALUES (?, ?, ?)"
-                Entity(vehicle).state.wheel_lr = true
-                Entity(vehicle).state.line_empty = true
+                query = "INSERT INTO mh_vehicle_sabotage (brakeline_lr, plate, brakeline_damage) VALUES (?, ?, ?)"
+                UpdateVehicleState(vehicle, "wheel_rf", "brakeline_lr", true)
             elseif bone == 'wheel_rr' then
-                query = "INSERT INTO mh_brakes (wheel_rr, plate, line_empty) VALUES (?, ?, ?)"
-                Entity(vehicle).state.wheel_rr = true
-                Entity(vehicle).state.line_empty = true
+                query = "INSERT INTO mh_vehicle_sabotage (brakeline_rr, plate, brakeline_damage) VALUES (?, ?, ?)"
+                UpdateVehicleState(vehicle, "wheel_rf", "brakeline_rr", true)
             end
             goto run
         elseif type == "wrecked" then
             if not bone then return end
             data = { 1, plate }
             if bone == 'wheel_lf' then
-                query = "UPDATE mh_brakes SET wheel_lf = ? WHERE plate = ?"
-                Entity(vehicle).state.wheel_lf = true
+                query = "UPDATE mh_vehicle_sabotage SET brakeline_lf = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_rf", "brakeline_lf", true)
                 goto run
             elseif bone == 'wheel_rf' then
-                query = "UPDATE mh_brakes SET wheel_rf = ? WHERE plate = ?"
-                Entity(vehicle).state.wheel_rf = true
+                query = "UPDATE mh_vehicle_sabotage SET brakeline_rf = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_rf", "brakeline_rf", true)
                 goto run
             elseif bone == 'wheel_lr' then
-                query = "UPDATE mh_brakes SET wheel_lr = ? WHERE plate = ?"
-                Entity(vehicle).state.wheel_lr = true
+                query = "UPDATE mh_vehicle_sabotage SET brakeline_lr = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_rf", "brakeline_lr", true)
                 goto run
             elseif bone == 'wheel_rr' then
-                query = "UPDATE mh_brakes SET wheel_rr = ? WHERE plate = ?"
-                Entity(vehicle).state.wheel_rr = true
+                query = "UPDATE mh_vehicle_sabotage SET brakeline_rr = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_rf", "brakeline_rr", true)
                 goto run
             end
         elseif type == "repair" then
             if not bone then return end
             data = { 0, plate }
             if bone == 'wheel_lf' then
-                query = "UPDATE mh_brakes SET wheel_lf = ? WHERE plate = ?"
-                Entity(vehicle).state.wheel_lf = false
+                query = "UPDATE mh_vehicle_sabotage SET brakeline_lf = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_lf", "brakeline_lf", false)
                 goto run
             elseif bone == 'wheel_rf' then
-                query = "UPDATE mh_brakes SET wheel_rf = ? WHERE plate = ?"
-                Entity(vehicle).state.wheel_rf = false
+                query = "UPDATE mh_vehicle_sabotage SET brakeline_rf = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_lf", "brakeline_rf", false)
                 goto run
             elseif bone == 'wheel_lr' then
-                query = "UPDATE mh_brakes SET wheel_lr = ? WHERE plate = ?"
-                Entity(vehicle).state.wheel_lr = false
+                query = "UPDATE mh_vehicle_sabotage SET brakeline_lr = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_lf", "brakeline_lr", false)
                 goto run
             elseif bone == 'wheel_rr' then
-                query = "UPDATE mh_brakes SET wheel_rr = ? WHERE plate = ?"
-                Entity(vehicle).state.wheel_rr = false
+                query = "UPDATE mh_vehicle_sabotage SET brakeline_rr = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_lf", "brakeline_rr", false)
                 goto run
             end
         elseif type == "refilled" then
             data = { plate }
-            query = "DELETE FROM mh_brakes WHERE plate = ?"
-            Entity(vehicle).state.line_empty = false
-            Entity(vehicle).state.wheel_lf = false
-            Entity(vehicle).state.wheel_rf = false
-            Entity(vehicle).state.wheel_lr = false
-            Entity(vehicle).state.wheel_rr = false
+            query = "DELETE FROM mh_vehicle_sabotage WHERE plate = ?"
+            UpdateVehicleState(vehicle, "wheel_lf", "brakeline_lf", false)
+            UpdateVehicleState(vehicle, "wheel_rf", "brakeline_rf", false)
+            UpdateVehicleState(vehicle, "wheel_lr", "brakeline_lr", false)
+            UpdateVehicleState(vehicle, "wheel_rr", "brakeline_rr", false)
+            goto run
+
+        elseif type == "damagetire" then
+            if not bone then return end
+            data = {1, 1, plate}
+            if bone == 'wheel_lf' then
+                query = "UPDATE mh_vehicle_sabotage SET tire_lf = ?, tire_damage = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_lf", "tire_lf", true)
+            elseif bone == 'wheel_rf' then
+                query = "UPDATE mh_vehicle_sabotage SET tire_rf = ?, tire_damage = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_rf", "tire_rf", true)
+            elseif bone == 'wheel_lr' then
+                query = "UPDATE mh_vehicle_sabotage SET tire_lr = ?, tire_damage = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_lr", "tire_lr", true)
+            elseif bone == 'wheel_rr' then
+                query = "UPDATE mh_vehicle_sabotage SET tire_rr = ?, tire_damage = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_rr", "tire_rr", true)
+            end
+            goto run
+        elseif type == "repairtire" then
+            if not bone then return end
+            data = {0, 1, plate}
+            if bone == 'wheel_lf' then
+                query = "UPDATE mh_vehicle_sabotage SET tire_lf = ?, tire_damage = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_lf", "tire_lf", false)
+            elseif bone == 'wheel_rf' then
+                query = "UPDATE mh_vehicle_sabotage SET tire_rf = ?, tire_damage = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_rf", "tire_rf", false)
+            elseif bone == 'wheel_lr' then
+                query = "UPDATE mh_vehicle_sabotage SET tire_lr = ?, tire_damage = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_lr", "tire_lr", false)
+            elseif bone == 'wheel_rr' then
+                query = "UPDATE mh_vehicle_sabotage SET tire_rr = ?, tire_damage = ? WHERE plate = ?"
+                UpdateVehicleState(vehicle, "wheel_rr", "tire_rr", false)
+            end
             goto run
         end
         ::run::
@@ -282,6 +354,13 @@ RegisterServerEvent("mh-vehiclesabotage:server:removeItem", function(item)
                 if currenItem.amount <= 0 then currenItem.amount = 0 end
                 Player.Functions.SetInventory(Player.PlayerData.items, true)
             end
+        elseif tmpItem.name == 'tire_knife' then
+            if tmpItem.info ~= nil and tmpItem.info.quality ~= nil then
+                local currenItem = Player.PlayerData.items[tmpItem.slot]
+                currenItem.info.quality = tmpItem.info.quality - SV_Config.VehicleTire.Damage.ReduseOnUse
+                if currenItem.amount <= 0 then currenItem.amount = 0 end
+                Player.Functions.SetInventory(Player.PlayerData.items, true)
+            end
         else
             Player.Functions.RemoveItem(tmpItem.name, 1)
             if GetResourceState("qb-inventory") ~= 'missing' then
@@ -303,6 +382,8 @@ RegisterNetEvent('mh-vehiclesabotage:server:giveitem', function(data)
         Player.Functions.RemoveMoney(SV_Config.MoneyType, price)
         if tmpData.name == SV_Config.BrakeLine.Cut.item then
             Player.Functions.AddItem(tmpData.name, tmpData.amount, nil, { quality = SV_Config.BrakeLine.Cut.MaxQuality })
+        elseif tmpData.name == SV_Config.VehicleTire.Damage.item then
+            Player.Functions.AddItem(tmpData.name, tmpData.amount, nil, { quality = SV_Config.VehicleTire.Damage.MaxQuality })
         else
             Player.Functions.AddItem(tmpData.name, tmpData.amount, nil, nil)
         end
@@ -324,28 +405,104 @@ RegisterServerEvent("mh-vehiclesabotage:server:syncDestroy", function(netid, bon
         local plate = GetVehicleNumberPlateText(vehicle)
         local exist = DoesPlateExist(plate)
         if not exist then
-            UpdateLineData(vehicle, bone, plate, "insert")
+            UpdateData(vehicle, bone, plate, "insert")
         elseif exist then
-            UpdateLineData(vehicle, bone, plate, "wrecked")
+            UpdateData(vehicle, bone, plate, "wrecked")
         end
     end
 end)
 
-RegisterServerEvent("mh-vehiclesabotage:server:syncRepair", function(netid, bone)
+RegisterServerEvent("mh-vehiclesabotage:server:syncAddSpeedBom", function(netid, value)
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) then
+        Entity(vehicle).state.exploded = false
+        Entity(vehicle).state.hasBom = true
+        Entity(vehicle).state.speed = value
+        Entity(vehicle).state.timed = false
+    end
+end)
+
+RegisterServerEvent("mh-vehiclesabotage:server:syncAddTimedBom", function(netid, value)
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) then
+        local plate = GetVehicleNumberPlateText(vehicle)
+        Entity(vehicle).state.exploded = false
+        Entity(vehicle).state.hasBom = true
+        Entity(vehicle).state.timed = value
+        Entity(vehicle).state.speed = false
+    end
+end)
+
+RegisterServerEvent("mh-vehiclesabotage:server:syncVehicleExploded", function(netid)
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) then
+        Entity(vehicle).state.exploded = true
+        Entity(vehicle).state.hasBom = false
+        Entity(vehicle).state.timed = false
+        Entity(vehicle).state.speed = false
+    end
+end)
+
+RegisterNetEvent("mh-vehiclesabotage:server:syncDamageTire", function(netid, bone)
+    local src = source
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
         local exist = DoesPlateExist(plate)
-        if exist then UpdateLineData(vehicle, bone, plate, "repair") end
+        if not exist then CheckVehicle(src, vehicle) end
+        local hasTireDamage = HasTireDamage(vehicle, bone)
+        if hasTireDamage then
+            Notify(src, "This tire is already damages...")
+        elseif not hasTireDamage then
+            local Player = QBCore.Functions.GetPlayer(src)
+            if Player.Functions.HasItem("tire_knife", 1) then
+                UpdateData(vehicle, bone, plate, "damagetire")
+            else
+                Notify(src, "You don't have a tire knife...")
+            end
+        end
     end
 end)
 
-RegisterServerEvent("mh-vehiclesabotage:server:syncFixed", function(netid)
+RegisterNetEvent("mh-vehiclesabotage:server:syncRepairTire", function(netid, bone)
+    local src = source
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) then
+        local plate = GetVehicleNumberPlateText(vehicle)
+        local exist = DoesPlateExist(plate)
+        if exist then
+            local hasTireDamage = HasTireDamage(vehicle, bone)
+            if not hasTireDamage then
+                Notify(src, "This tire is fine...")
+            elseif hasTireDamage then
+                local Player = QBCore.Functions.GetPlayer(src)
+                if Player then
+                    if Player.Functions.HasItem(SV_Config.VehicleTire.Repair.item, 1) then
+                        UpdateData(vehicle, bone, plate, "repairtire")
+                    else
+                        Notify(src, "You don't have a tire...")
+                    end
+                end
+            end
+        end
+    end
+end)
+
+RegisterServerEvent("mh-vehiclesabotage:server:syncRepairBrakes", function(netid, bone)
+    local vehicle = NetworkGetEntityFromNetworkId(netid)
+    if DoesEntityExist(vehicle) then
+        local plate = GetVehicleNumberPlateText(vehicle)
+        local exist = DoesPlateExist(plate)
+        if exist then UpdateData(vehicle, bone, plate, "repair") end
+    end
+end)
+
+RegisterServerEvent("mh-vehiclesabotage:server:syncRefillBrakeOil", function(netid)
     local vehicle = NetworkGetEntityFromNetworkId(netid)
     if DoesEntityExist(vehicle) then
         local plate = GetVehicleNumberPlateText(vehicle)
         local isALineBroken = IsALineBroken(vehicle)
-        if not isALineBroken then UpdateLineData(vehicle, nil, plate, "refilled") end
+        if not isALineBroken then UpdateData(vehicle, nil, plate, "refilled") end
     end
 end)
 
@@ -353,7 +510,7 @@ RegisterServerEvent("mh-vehiclesabotage:server:syncOilEffect", function(netid)
     if SV_Config.UseOilMarker then
         local vehicle = NetworkGetEntityFromNetworkId(netid)
         if DoesEntityExist(vehicle) then
-            if Entity(vehicle).state.wheel_lf or Entity(vehicle).state.wheel_rf or Entity(vehicle).state.wheel_lr or Entity(vehicle).state.wheel_rr or Entity(vehicle).state.line_empty then
+            if Entity(vehicle).state.brakeline_lf or Entity(vehicle).state.brakeline_rf or Entity(vehicle).state.brakeline_lr or Entity(vehicle).state.brakeline_rr or Entity(vehicle).state.brakeline_damage then
                 TriggerClientEvent('mh-vehiclesabotage:client:showEffect', -1, netid)
             end
         end
@@ -406,16 +563,43 @@ QBCore.Functions.CreateUseableItem(SV_Config.BrakeLine.Oil.item, function(source
     UseItem(src, SV_Config.BrakeLine.Oil.item)
 end)
 
+QBCore.Functions.CreateUseableItem(SV_Config.VehicleBom.Add.item, function(source, item)
+    local src = source
+    UseItem(src, SV_Config.VehicleBom.Add.item)
+end)
+
+QBCore.Functions.CreateUseableItem(SV_Config.VehicleBom.Remove.item, function(source, item)
+    local src = source
+    UseItem(src, SV_Config.VehicleBom.Remove.item)
+end)
+
+QBCore.Functions.CreateUseableItem(SV_Config.VehicleTire.Damage.item, function(source, item)
+    local src = source
+    UseItem(src, SV_Config.VehicleTire.Damage.item)
+end)
+
+QBCore.Functions.CreateUseableItem(SV_Config.VehicleTire.Repair.item, function(source, item)
+    local src = source
+    UseItem(src, SV_Config.VehicleTire.Repair.item)
+end)
+
 CreateThread(function()
+    MySQL.Async.execute('DROP TABLE IF EXISTS mh_brakes')
+    Wait(100)
     MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `mh_brakes` (
+        CREATE TABLE IF NOT EXISTS `mh_vehicle_sabotage` (
             `id` int(10) NOT NULL AUTO_INCREMENT,
             `plate` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-            `wheel_lf` int(10) NOT NULL DEFAULT 0,
-            `wheel_rf` int(10) NOT NULL DEFAULT 0,
-            `wheel_lr` int(10) NOT NULL DEFAULT 0,
-            `wheel_rr` int(10) NOT NULL DEFAULT 0,
-            `line_empty` int(10) NOT NULL DEFAULT 0,
+            `brakeline_lf` int(10) NOT NULL DEFAULT 0,
+            `brakeline_rf` int(10) NOT NULL DEFAULT 0,
+            `brakeline_lr` int(10) NOT NULL DEFAULT 0,
+            `brakeline_rr` int(10) NOT NULL DEFAULT 0,
+            `brakeline_damage` int(10) NOT NULL DEFAULT 0,
+            `tire_lf` int(10) NOT NULL DEFAULT 0,
+            `tire_rf` int(10) NOT NULL DEFAULT 0,
+            `tire_lr` int(10) NOT NULL DEFAULT 0,
+            `tire_rr` int(10) NOT NULL DEFAULT 0,
+            `tire_damage` int(10) NOT NULL DEFAULT 0,
             PRIMARY KEY (`id`) USING BTREE
         ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
     ]])
