@@ -41,13 +41,13 @@
 - [qb-minigames](https://github.com/qbcore-framework/qb-core/qb-minigames)
 
 # Inventory Images
-![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_cutter.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_line.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_oil.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/carbom.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/tire_knife.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/toolbox.png?raw=true)
-![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/new_tire.png?raw=true)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_cutter.png)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_line.png)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/brake_oil.png)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/carbom.png)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/tire_knife.png)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/toolbox.png)
+![alttext](https://github.com/MaDHouSe79/mh-vehiclesabotage/blob/main/image/new_tire.png)
 
 # Installation
 - Place the folder `mh-vehiclesabotage` in the folder `[mh]`
