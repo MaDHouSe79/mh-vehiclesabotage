@@ -294,15 +294,6 @@ end
 ---@param trigger string
 ---@param endMessage string
 ---@param animData table
-
---[[
-'0 = wheel_lf / bike, plane or jet front  
-'1 = wheel_rf  
-'2 = wheel_lm
-'3 = wheel_rm 
-'4 = wheel_lr 
-'5 = wheel_rr
-]]
 local function DoJob(title, item, timer, vehicle, bone, trigger, endMessage, animData)
     LoadAnimDict(animData.animation.dict)
     disableControll = true
