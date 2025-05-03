@@ -22,7 +22,7 @@
     </a>      
 </p>
 
-# MH MH Vehicle Sabotage (OneSync Required)
+# MH Vehicle Sabotage (OneSync Required)
 - Download: https://github.com/MH-Scripts
 - Youtube: https://www.youtube.com/@MaDHouSe79
 
