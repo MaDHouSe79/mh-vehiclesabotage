@@ -4,28 +4,6 @@
     <h3 align="center">A passionate allround developer </h3>    
 </p>
 
-<p align="center">
-    <a href="https://github.com/MH-Scripts/mh-cashasitem/issues">
-        <img src="https://img.shields.io/github/issues/MH-Scripts/mh-cashasitem"/> 
-    </a>
-    <a href="https://github.com/MH-Scripts/MH-Scripts/watchers">
-        <img src="https://img.shields.io/github/watchers/MH-Scripts/mh-cashasitem"/> 
-    </a> 
-    <a href="https://github.com/MH-Scripts/mh-cashasitem/network/members">
-        <img src="https://img.shields.io/github/forks/MH-Scripts/mh-cashasitem"/> 
-    </a>  
-    <a href="https://github.com/MH-Scripts/mh-cashasitem/stargazers">
-        <img src="https://img.shields.io/github/stars/MH-Scripts/mh-cashasitem?color=white"/> 
-    </a>
-    <a href="https://github.com/MH-Scripts/MH-Scripts/blob/main/LICENSE">
-        <img src="https://img.shields.io/github/license/MH-Scripts/MH-Scripts?color=black"/> 
-    </a>      
-</p>
-
-# MH Vehicle Sabotage (OneSync Required)
+# MH Vehicle Sabotage
 - Download: https://github.com/MH-Scripts
 - Youtube: https://www.youtube.com/@MaDHouSe79
-
-# LICENSE
-[GPL LICENSE](./LICENSE)<br />
-&copy; [MaDHouSe79](https://www.youtube.com/@MaDHouSe79)
