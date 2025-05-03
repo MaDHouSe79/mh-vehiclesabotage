@@ -8,16 +8,16 @@
     <a href="https://github.com/MH-Scripts/mh-cashasitem/issues">
         <img src="https://img.shields.io/github/issues/MH-Scripts/mh-cashasitem"/> 
     </a>
-    <a href="https://github.com/MaDHouSe79/MH-Scripts/watchers">
+    <a href="https://github.com/MH-Scripts/MH-Scripts/watchers">
         <img src="https://img.shields.io/github/watchers/MH-Scripts/mh-cashasitem"/> 
     </a> 
-    <a href="https://github.com/MaDHouSe79/mh-cashasitem/network/members">
+    <a href="https://github.com/MH-Scripts/mh-cashasitem/network/members">
         <img src="https://img.shields.io/github/forks/MH-Scripts/mh-cashasitem"/> 
     </a>  
-    <a href="https://github.com/MaDHouSe79/mh-cashasitem/stargazers">
+    <a href="https://github.com/MH-Scripts/mh-cashasitem/stargazers">
         <img src="https://img.shields.io/github/stars/MH-Scripts/mh-cashasitem?color=white"/> 
     </a>
-    <a href="https://github.com/MaDHouSe79/MH-Scripts/blob/main/LICENSE">
+    <a href="https://github.com/MH-Scripts/MH-Scripts/blob/main/LICENSE">
         <img src="https://img.shields.io/github/license/MH-Scripts/MH-Scripts?color=black"/> 
     </a>      
 </p>
